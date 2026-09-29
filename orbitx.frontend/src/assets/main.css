@@ -1,0 +1,66 @@
+@import './base.css';
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #app {
+  height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Тонкий вес (Light) */
+@font-face {
+  font-family: 'Exo 2';
+  src: url('./fonts/Exo2-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Обычный вес (Regular) */
+@font-face {
+  font-family: 'Exo 2';
+  src: url('./fonts/Exo2-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Жирный вес (Bold) */
+@font-face {
+  font-family: 'Exo 2';
+  src: url('./fonts/Exo2-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+body {
+  min-height: 100%;
+  font-family: 'Exo 2', sans-serif;
+  /* Плавно уменьшаем базовый шрифт на узких экранах (от 14px до 16px) */
+  font-size: clamp(14px, 3.2vw, 16px);
+  line-height: 1.5;
+  color: white;
+  background-color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Отступы под "чёлку"/скругления экрана на iPhone и подобных устройствах */
+body {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+img {
+  max-width: 100%; /* Картинка сжимается, если ее родительский блок становится уже нее */
+  height: auto; /* Пропорции картинки сохраняются при изменении ширины */
+  display: block; /* Убирает микро-отступ (около 3-4px) снизу картинки */
+}
