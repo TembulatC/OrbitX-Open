@@ -1,8 +1,9 @@
-﻿using Core.Modules.SGP4Data.Application.Interfaces;
-using Core.Modules.SatelliteData.Application.Interfaces;
+﻿using Core.Modules.SatelliteData.Application.Interfaces;
+using Core.Modules.SGP4Data.Application.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using OrbitX.BackgroundWorkers;
 using Serilog.Context;
+using System.Xml.Linq;
 
 namespace OrbitX.Controllers
 {
@@ -46,7 +47,6 @@ namespace OrbitX.Controllers
             LogSuccessAdd();
             return Ok();
         }
-
 
         // 2 метода для получения данных спутников без обхода логгирования
         [HttpGet]

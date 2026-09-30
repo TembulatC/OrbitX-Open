@@ -7,17 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Modules\GeoTracking\Infrastructure\DBContext\**" />
-    <EmbeddedResource Remove="Modules\GeoTracking\Infrastructure\DBContext\**" />
-    <None Remove="Modules\GeoTracking\Infrastructure\DBContext\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Modules\GeoTracking\Application\Services\" />
-    <Folder Include="Modules\GeoTracking\Application\DTOs\" />
-    <Folder Include="Modules\GeoTracking\Domain\Models\" />
-    <Folder Include="Modules\GeoTracking\Domain\Intefaces\" />
-    <Folder Include="Modules\GeoTracking\Infrastructure\Repositories\" />
+    <Compile Remove="Modules\GeoTracking\**" />
+    <EmbeddedResource Remove="Modules\GeoTracking\**" />
+    <None Remove="Modules\GeoTracking\**" />
   </ItemGroup>
 
   <ItemGroup>

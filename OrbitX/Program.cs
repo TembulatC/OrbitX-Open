@@ -106,6 +106,12 @@ namespace OrbitX
             builder.Services.AddHostedService<SatelliteBackgroundWorker>(provider =>
                 provider.GetRequiredService<SatelliteBackgroundWorker>());
 
+            // Регистрируем сам класс воркера как Singleton, чтобы DI мог найти его для конструктора Хаба
+            builder.Services.AddSingleton<SitemapBackgroundWorker>();
+            // Говорим .NET Core использовать этот же самый Singleton-экземпляр в качестве фонового Hosted-сервиса
+            builder.Services.AddHostedService<SitemapBackgroundWorker>(provider =>
+                provider.GetRequiredService<SitemapBackgroundWorker>());
+
             // Добавляем инфраструктуру веб-сокетов SignalR
             builder.Services.AddSignalR();
 

@@ -47,7 +47,7 @@
         [LoggerMessage(
             EventId = 3008,
             Level = LogLevel.Information,
-            Message = "Фоновые процессы OrbitX запущены")]
+            Message = "Фоновый процесс OrbitX запущен")]
         private partial void LogLaunchWorker();
 
         [LoggerMessage(
