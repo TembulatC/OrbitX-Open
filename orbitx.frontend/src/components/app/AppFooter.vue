@@ -9,12 +9,12 @@
           <div class="footer-socials">
 
             <!-- 2. ТЕЛЕГРАМ -->
-            <a href="https://t.me/TKunjut" target="_blank" class="social-link" title="Написать в Telegram">
+            <a href="https://t.me/TKunjut" target="_blank" class="social-link" title="Send a message on Telegram">
               <img src="@/assets/logo/telegram-logo.svg" alt="Telegram" class="social-icon" />
             </a>
 
             <!-- 3. ПОЧТА -->
-            <div class="social-link" title="Написать на почту" @click="isEmailOpen = true">
+            <div class="social-link" title="Send an email" @click="isEmailOpen = true">
               <img src="@/assets/logo/gmail-logo.svg" alt="Email" class="social-icon" />
             </div>
 
@@ -22,22 +22,22 @@
         </div>
 
         <p class="footer-copyright">
-          © 2026 OrbitX Project. Все права защищены.<br />
-          Система мониторинга и анализа орбитальных группировок.
+          © 2026 OrbitX Project. All rights reserved.<br />
+          System for Monitoring and Analyzing Orbital Constellations.
         </p>
       </div>
 
       <div class="footer-right">
         <div class="status-indicator">
           <span class="status-dot"></span>
-          <span class="status-text">Сервис работает стабильно</span>
+          <span class="status-text">All systems operational</span>
         </div>
         <div class="footer-links">
-          <router-link to="/privacy" class="footer-link">Конфиденциальность</router-link>
-          <router-link to="/terms" class="footer-link">Условия использования</router-link>
+          <router-link to="/privacy" class="footer-link">Privacy</router-link>
+          <router-link to="/terms" class="footer-link">Terms of Use</router-link>
           <!-- По клику открывается окно -->
-          <button @click="isSupportOpen = true" class="footer-link-btn">Поддержка</button>
-          <router-link to="/donate" class="footer-link footer-link-accent">Поддержать проект</router-link>
+          <button @click="isSupportOpen = true" class="footer-link-btn">Support</button>
+          <router-link to="/donate" class="footer-link footer-link-accent">Support the project</router-link>
         </div>
       </div>
     </div>
@@ -46,7 +46,7 @@
     <div v-if="isSupportOpen" class="modal-overlay" @click.self="isSupportOpen = false">
       <div class="modal-box">
         <div class="modal-header">
-          <h3 class="modal-title">Техническая поддержка OrbitX</h3>
+          <h3 class="modal-title">OrbitX Support</h3>
           <button @click="isSupportOpen = false" class="modal-close-btn">×</button>
         </div>
 
@@ -54,12 +54,12 @@
           <div class="support-grid">
 
             <!-- РАЗДЕЛ 1: ДЛЯ ПОЛЬЗОВАТЕЛЕЙ -->
-            <div class="support-section-label">Для пользователей</div>
+            <div class="support-section-label">For users</div>
             <div class="support-item">
               <span class="support-icon">✉️</span>
               <div>
-                <h4>Обратная связь и вопросы</h4>
-                <p>По любым вопросам использования аналитической платформы, предложениям по сотрудничеству или улучшению интерфейса вы можете написать мне на прямую почту.</p>
+                <h4>Feedback and Questions</h4>
+                <p>If you have any questions about using the platform, suggestions for collaboration, or ideas for improving the interface, please email us.</p>
                 <a class="support-action" @click.prevent="isSupportOpen = false; isEmailOpen = true">support@orbitx-web.com</a>
               </div>
             </div>
@@ -73,12 +73,12 @@
     <div v-if="isEmailOpen" class="modal-overlay" @click.self="isEmailOpen = false">
       <div class="modal-box email-modal-box">
         <div class="modal-header">
-          <h3 class="modal-title">Написать на почту</h3>
+          <h3 class="modal-title">Send an email</h3>
           <button @click="isEmailOpen = false" class="modal-close-btn">×</button>
         </div>
 
         <div class="modal-body">
-          <p class="email-modal-hint">Выберите сервис, в котором хотите открыть письмо на <span class="email-modal-address">{{ EMAIL }}</span></p>
+          <p class="email-modal-hint">Select the service where you want to open the email at <span class="email-modal-address">{{ EMAIL }}</span></p>
 
           <div class="email-options">
 
@@ -212,16 +212,16 @@
   .footer-links {
     display: flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: wrap; /* Если ссылки не помещаются в ряд — переносим их ЦЕЛИКОМ, а не по словам */
     row-gap: 10px;
-    justify-content: flex-end;
+    justify-content: flex-end; /* На ПК/средних экранах держим прижатыми вправо */
   }
 
   .footer-link {
     font-size: 14px;
     color: #94a3b8;
     text-decoration: none;
-    white-space: nowrap;
+    white-space: nowrap; /* Запрещаем тексту ссылки рваться посередине слова */
     transition: color 0.2s ease;
   }
 
@@ -237,7 +237,7 @@
     color: #94a3b8;
     cursor: pointer;
     padding: 0;
-    white-space: nowrap;
+    white-space: nowrap; /* Запрещаем тексту кнопки рваться посередине слова */
     transition: color 0.2s ease;
     font-family: 'Exo 2', sans-serif;
     display: inline-flex;
@@ -266,12 +266,15 @@
     top: 0;
     left: 0;
     width: 100vw;
+    /* 100dvh вместо 100vh — учитывает реальную видимую высоту на мобильных
+       (без него на iOS/Android высота "прыгает" из-за адресной строки браузера) */
     height: 100vh;
     height: 100dvh;
     background-color: rgba(0, 0, 0, 0.6);
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Отступы по краям + safe-area, чтобы окно не прилипало к краям экрана и не пряталось под чёлку/жестовую полосу */
     padding: 24px calc(20px + env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
     z-index: 1000;
   }
@@ -280,9 +283,11 @@
   .modal-box {
     max-width: 600px;
     width: 100%;
+    /* Ограничиваем высоту видимой областью и разрешаем скролл ВНУТРИ окна,
+       если контент (например, список поддержки) не помещается */
     max-height: 100%;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    -webkit-overflow-scrolling: touch; /* Плавный инерционный скролл на iOS */
     background-color: #141414;
     border: 1px solid #222222;
     border-radius: 16px;
@@ -369,7 +374,7 @@
   }
 
     .footer-link-accent:hover {
-      color: #ec4899;
+      color: #ec4899; /* Становится чуть насыщеннее при наведении */
     }
 
   /* Метки категорий внутри модального окна */
@@ -509,7 +514,7 @@
     }
 
     .footer-right {
-      align-items: flex-start;
+      align-items: flex-start; /* На мобильных прижимаем к левому краю, как и левый блок */
       width: 100%;
       gap: 14px;
     }

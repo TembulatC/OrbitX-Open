@@ -5,19 +5,19 @@
       <!-- Текстовый блок слева -->
       <div class="hero-content">
         <h1 class="hero-title">
-          Интеллектуальный мониторинг <span class="accent-text">орбитальных группировок</span>
+          Intelligent Monitoring of <span class="accent-text">Orbital Constellations</span>
         </h1>
         <p class="hero-subtitle">
-          Платформа OrbitX предоставляет продвинутые инструменты SGP4-моделирования для современных спутниковых систем в реальном времени. Модули телеметрии и геомагнитного трекинга находятся в разработке...
+          The OrbitX platform provides advanced SGP4-tracking tools for modern satellite systems in real time. The telemetry and geomagnetic tracking modules are currently under development...
         </p>
 
         <!-- Кнопки действий -->
         <div class="hero-actions">
-          <router-link to="/satellites_modeling" class="btn btn-primary">
-            Открыть каталог
+          <router-link to="/satellites-modeling" class="btn btn-primary">
+            Open Catalog
           </router-link>
           <button @click="scrollToRoadmap" class="btn btn-secondary">
-            Узнать больше
+            Learn More
           </button>
         </div>
       </div>
@@ -36,8 +36,8 @@
     <div class="container">
       <div class="roadmap-box">
         <!-- Заголовок секции -->
-        <h2 class="section-title">Дорожная карта <span class="accent-text">развития OrbitX</span></h2>
-        <p class="section-subtitle">Этапы интеграции модулей и развертывания аналитической платформы</p>
+        <h2 class="section-title"><span class="accent-text">OrbitX </span>Development Roadmap</h2>
+        <p class="section-subtitle">Stages of Modules Integration and Platform Deployment</p>
 
         <!-- Контейнер для шагов карты -->
         <div class="roadmap-timeline">
@@ -46,16 +46,16 @@
           <div class="roadmap-item completed">
             <div class="roadmap-badge">✓</div>
             <div class="roadmap-content">
-              <span class="roadmap-date">Этап 1 — Интегрировано</span>
-              <h3 class="roadmap-item-title">SGP4-Моделирование</h3>
+              <span class="roadmap-date">Phase 1 — Integrated</span>
+              <h3 class="roadmap-item-title">SGP4—Tracking</h3>
               <div class="roadmap-item-text">
                 <p style="margin-bottom: 8px; font-weight: 600; color: #ffffff;">
-                  Высокоточное прогнозирование и визуализация орбитальных траекторий:
+                  High-precision prediction and visualization of orbital trajectories:
                 </p>
                 <ul>
-                  <li>Расчет координат космических аппаратов на основе актуальных OMM-данных.</li>
-                  <li>Интерактивное отображение местонахождения спутников в реальном времени.</li>
-                  <li>Поддержка масштабных орбитальных группировок без потери производительности.</li>
+                  <li>Calculation of spacecraft coordinates based on up-to-date OMM data.</li>
+                  <li>Interactive real-time display of satellite locations.</li>
+                  <li>Support for large-scale orbital constellations without compromising performance.</li>
                 </ul>
               </div>
             </div>
@@ -65,10 +65,10 @@
           <div class="roadmap-item completed">
             <div class="roadmap-badge">2</div>
             <div class="roadmap-content">
-              <span class="roadmap-date">Этап 2 — В разработке</span>
-              <h3 class="roadmap-item-title">Модуль: Телеметрия</h3>
+              <span class="roadmap-date">Phase 2 — In development</span>
+              <h3 class="roadmap-item-title">Module: Telemetry</h3>
               <p class="roadmap-item-text">
-                Интерактивные дашборды для контроля внутренних систем аппарата. Анализ энергопотребления (EPS), температурных режимов (TCS), статуса радиосвязи (COMMS) и ориентации в пространстве (ADCS) по логам.
+                Interactive dashboards for monitoring the spacecraft's internal systems. Analysis of power consumption (EPS), temperature control (TCS), radio communication status (COMMS), and attitude and orientation (ADCS) based on log data.
               </p>
             </div>
           </div>
@@ -77,10 +77,10 @@
           <div class="roadmap-item">
             <div class="roadmap-badge">3</div>
             <div class="roadmap-content">
-              <span class="roadmap-date">Этап 3 — В проекте</span>
-              <h3 class="roadmap-item-title">Модуль: Геомагнитный трекинг</h3>
+              <span class="roadmap-date">Phase 3 — In the future</span>
+              <h3 class="roadmap-item-title">Module: Geomagnetic Tracking</h3>
               <p class="roadmap-item-text">
-                Мониторинг космической погоды и солнечной активности. Анализ Kp-индекса и прогнозирование аномалий (включая SAA) для предотвращения деградации орбит (Atmospheric Drag) и сбоев бортовой электроники.
+                Monitoring space weather and solar activity. Analysis of the Kp index and forecasting of anomalies (including SAAs) to prevent orbital degradation (atmospheric drag) and malfunctions in onboard electronics.
               </p>
             </div>
           </div>
@@ -96,6 +96,8 @@
     display: flex;
     align-items: center;
     min-height: calc(100vh - 80px);
+    /* Добавляем внутренние безопасные отступы сверху и снизу (по 40px), */
+    /* чтобы при сильном сжатии окон текст не упирался в шапку и дорожную карту */
     padding: 40px 0;
     margin: 0;
     background-color: #1a1a1a;
@@ -111,7 +113,7 @@
 
   /* Левая текстовая часть */
   .hero-content {
-    max-width: 600px;
+    max-width: 600px; /* Чтобы текст не растягивался слишком широко */
   }
 
   .hero-title {
@@ -130,7 +132,7 @@
   .hero-subtitle {
     font-size: clamp(15px, 2.2vw, 18px);
     line-height: 1.6;
-    color: #94a3b8;
+    color: #94a3b8; /* Спокойный серо-голубой цвет текста */
     margin-bottom: 40px;
   }
 
@@ -160,7 +162,7 @@
 
     .btn-primary:hover {
       background-color: #c74275;
-      transform: translateY(-2px);
+      transform: translateY(-2px); /* Эффект легкого всплытия при наведении */
     }
 
   .btn-secondary {
@@ -213,7 +215,7 @@
     top: 50%;
     left: 50%;
     transform-origin: left center;
-    animation: radar-rotate 4s linear infinite;
+    animation: radar-rotate 4s linear infinite; /* Заставим линию крутиться */
   }
 
   @keyframes radar-rotate {
@@ -232,17 +234,18 @@
     margin: 0;
     margin-bottom: 80px;
     background-color: #1a1a1a;
+    /* Включаем Flexbox, чтобы большая темная коробка встала по центру экрана */
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: center; /* Центрирование по вертикали */
+    justify-content: center; /* Центрирование по горизонтали */
   }
 
   /* Наш большой темный прямоугольник-остров */
   .roadmap-box {
     max-width: 1000px;
     width: 100%;
-    padding: 50px 40px;
-    background-color: #141414;
+    padding: 50px 40px; /* Симметричные, аккуратные отступы сверху и снизу */
+    background-color: #141414; /* Угольно-темный фон коробки */
     border: 1px solid #222222;
     border-radius: 24px;
   }
@@ -261,13 +264,13 @@
     font-size: 16px;
     color: #64748b;
     text-align: center;
-    margin-bottom: 45px;
+    margin-bottom: 45px; /* Уплотнили расстояние до карточек, чтобы убрать пустоту */
   }
 
   /* Общая линия таймлайна */
   .roadmap-timeline {
     position: relative;
-    max-width: 720px;
+    max-width: 720px; /* Сжали ширину карточек до 720px, чтобы они смотрелись аккуратно */
     margin: 0 auto;
     padding-left: 50px;
   }
@@ -279,6 +282,7 @@
       bottom: 15px;
       left: 15px;
       width: 2px;
+      /* Градиент переливается из ярко-розового в темно-розовый и мягко гаснет в цвет подложки (#141414) */
       background: linear-gradient(to bottom, #ea75a2 0%, #ec4899 50%, #141414 100%);
       opacity: 0.8;
     }
@@ -286,11 +290,11 @@
   /* Блок одного шага */
   .roadmap-item {
     position: relative;
-    margin-bottom: 40px;
+    margin-bottom: 40px; /* Аккуратный шаг между блоками */
   }
 
     .roadmap-item:last-child {
-      margin-bottom: 0;
+      margin-bottom: 0; /* Полностью убирает лишний отступ снизу у последней карточки */
     }
 
   /* БАЗОВЫЙ СТИЛЬ КАРТОЧКИ (ЭФФЕКТ СТЕКЛА) */
@@ -299,7 +303,7 @@
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.03);
     border-radius: 16px;
-    padding: 24px 28px;
+    padding: 24px 28px; /* Компактные отступы внутри карточки */
     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -417,12 +421,12 @@
      радар уходит под текст и уменьшается, дорожная карта сжимает отступы */
   @media (max-width: 768px) {
     .hero-section {
-      min-height: auto;
+      min-height: auto; /* На мобильных не тянем на весь экран — контент сам определяет высоту */
       padding: 32px 0;
     }
 
     .hero-wrapper {
-      flex-direction: column-reverse;
+      flex-direction: column-reverse; /* Радар уходит наверх, текст остаётся легче для чтения */
       text-align: center;
       gap: 24px;
     }
@@ -437,7 +441,7 @@
 
     .hero-actions {
       justify-content: center;
-      flex-wrap: wrap;
+      flex-wrap: wrap; /* Кнопки переносятся, если не помещаются в ряд */
     }
 
     .btn {
@@ -511,7 +515,7 @@
   /* Маленькие телефоны (до 380px) */
   @media (max-width: 380px) {
     .hero-actions {
-      flex-direction: column;
+      flex-direction: column; /* Кнопки друг под другом на самых узких экранах */
       width: 100%;
     }
 

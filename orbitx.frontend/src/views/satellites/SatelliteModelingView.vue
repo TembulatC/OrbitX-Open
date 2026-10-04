@@ -7,9 +7,9 @@
         <div class="header-block-flex-wrapper">
 
           <p class="modeling-subtitle" style="margin: 0;">
-            Текущий аппарат:
+            Current device:
             <span class="accent-text name-accent" v-if="satelliteData">{{ satelliteData.name }}</span>
-            <span class="accent-text" v-else>Определение объекта...</span>
+            <span class="accent-text" v-else>Defining the object...</span>
             | NORAD ID: <span class="accent-id">{{ noradId }}</span>
           </p>
 
@@ -18,19 +18,19 @@
             <span class="status-dot" :class="(syncStatus === 'error' || syncStatus === 'db_error') ? 'dot-error' : `dot-${syncStatus}`"></span>
             <p class="status-badge-text">
               <template v-if="syncStatus === 'pending'">
-                Подключение...
+                Connecting...
               </template>
               <template v-else-if="syncStatus === 'success'">
-                Моделирование подключено
+                Tracking is enabled
               </template>
               <template v-else-if="syncStatus === 'reconnecting'">
-                Потеря связи. Пожалуйста, перезапустите моделирование
+                Connection lost. Please restart tracking
               </template>
               <template v-else-if="syncStatus === 'error'">
-                Ошибка подключения. Сервер временно не отвечает.
+                Connection error. The server is temporarily unavailable.
               </template>
               <template v-else-if="syncStatus === 'db_error'">
-                Ошибка подключения. Сервер временно не отвечает.
+                Connection error. The server is temporarily unavailable.
               </template>
             </p>
           </div>
@@ -55,19 +55,19 @@
           <!-- Показывается при первом подключении, при потере интернета и при любом сбое загрузки тайлов -->
           <div class="map-status-toast" v-if="showMapConnectingToast">
             <span class="toast-spinner"></span>
-            <p class="toast-text">Подключение карты...</p>
+            <p class="toast-text">Loading map...</p>
           </div>
 
         </div>
 
         <!-- ПРАВАЯ КОЛОНКА: ПАНЕЛЬ МЕСТОПОЛОЖЕНИЯ АППАРАТА -->
         <div class="telemetry-sidebar">
-          <h3 class="sidebar-title">Местоположение аппарата</h3>
+          <h3 class="sidebar-title">Location of the device</h3>
 
           <div class="telemetry-grid">
             <!-- 1. Широта (Latitude) -->
             <div class="telemetry-card">
-              <span class="telemetry-label">Широта (Latitude)</span>
+              <span class="telemetry-label">Latitude</span>
               <span class="telemetry-value" v-if="satelliteData">
                 {{ satelliteData.latitude?.toFixed(6) }}°
               </span>
@@ -76,7 +76,7 @@
 
             <!-- 2. Долгота (Longitude) -->
             <div class="telemetry-card">
-              <span class="telemetry-label">Долгота (Longitude)</span>
+              <span class="telemetry-label">Longitude</span>
               <span class="telemetry-value" v-if="satelliteData">
                 {{ satelliteData.longitude?.toFixed(6) }}°
               </span>
@@ -85,9 +85,9 @@
 
             <!-- 3. Высота (Altitude) -->
             <div class="telemetry-card">
-              <span class="telemetry-label">Высота (Altitude)</span>
+              <span class="telemetry-label">Altitude</span>
               <span class="telemetry-value value-alt" v-if="satelliteData">
-                {{ satelliteData.altitude?.toFixed(2) }} км
+                {{ satelliteData.altitude?.toFixed(2) }} km
               </span>
               <span class="telemetry-value loading-value" v-else>---.--</span>
             </div>
@@ -98,7 +98,7 @@
             <span class="frequency-indicator"
                   :class="syncStatus === 'success' ? 'indicator-success' : 'indicator-error blink-dot'"></span>
             <span style="color: #94a3b8">
-              Обновление данных: {{ syncStatus === 'success' ? '~1 раз / сек' : '~0 раз / сек' }}
+              Data Update: {{ syncStatus === 'success' ? '~1 / sec' : '~0 / sec' }}
             </span>
           </div>
         </div>
@@ -130,7 +130,7 @@
   const satelliteData = ref<SGP4DataDTO | null>(null)
   const syncStatus = ref<'pending' | 'success' | 'reconnecting' | 'error' | 'db_error'>('pending')
   const connectionStatus = ref<'connecting' | 'connected' | 'disconnected'>('connecting')
-  const statusText = ref('Установка соединения...')
+  const statusText = ref('Establishing a connection...')
 
   const isMapLoaded = ref<boolean>(false)
 
@@ -332,7 +332,7 @@
     noradId.value = id
     connectionStatus.value = 'connecting'
     syncStatus.value = 'pending'
-    statusText.value = 'Установка соединения...'
+    statusText.value = 'Connection...'
 
     dbTimeoutTimer = window.setTimeout(() => {
       if (syncStatus.value === 'pending') {
@@ -364,7 +364,7 @@
       clearHeartbeatTimeout()
       syncStatus.value = 'reconnecting'
       connectionStatus.value = 'connecting'
-      statusText.value = 'Переподключение...'
+      statusText.value = 'Reconnecting...'
       satelliteData.value = null
     })
 
@@ -373,14 +373,14 @@
       clearHeartbeatTimeout()
       syncStatus.value = 'error'
       connectionStatus.value = 'disconnected'
-      statusText.value = 'Соединение потеряно.'
+      statusText.value = 'Connection lost.'
       satelliteData.value = null
     })
 
     try {
       await hubConnection.start()
       connectionStatus.value = 'connected'
-      statusText.value = 'Моделирование подключено'
+      statusText.value = 'Tracking is enabled'
       await hubConnection.invoke('WatchSatellite', id)
       resetHeartbeatTimeout()
     } catch (err) {
@@ -388,7 +388,7 @@
       clearHeartbeatTimeout()
       syncStatus.value = 'error'
       connectionStatus.value = 'disconnected'
-      statusText.value = 'Ошибка подключения. Возможно не отвечает сервер.'
+      statusText.value = 'Connection error. The server is temporarily unavailable.'
     }
   }
 
@@ -404,6 +404,25 @@
         const parsedId = parseInt(newId as string, 10)
         if (!isNaN(parsedId)) {
           startSatelliteTracking(parsedId)
+        }
+      }
+    },
+    { immediate: true }
+  )
+
+  watch(
+    () => satelliteData.value?.name,
+    (newName) => {
+      if (newName) {
+        // 1. Динамически меняем заголовок вкладки браузера
+        document.title = `${newName} Satellite (NORAD ${noradId.value}) Live Tracking & Location | OrbitX`
+
+        // 2. Обновляем мета-описание для поисковых роботов Google/Яндекс
+        const metaDesc = document.querySelector('meta[name="description"]')
+        if (metaDesc) {
+          metaDesc.setAttribute('content',
+            `Live tracking of ${newName} satellite (NORAD ID ${noradId.value}) on an interactive world map. View real-time coordinates, altitude, and SGP4 orbit tracking on OrbitX.`
+          )
         }
       }
     },
@@ -817,7 +836,7 @@
     }
 
     .map-container-box {
-      height: 300px;
+      height: 300px; /* На маленьких телефонах карта чуть ниже, чтобы страница помещалась без лишнего скролла */
     }
 
     .telemetry-sidebar {
@@ -858,7 +877,7 @@
     background-color: #141414 !important;
     border: 1px solid #222222 !important;
     border-bottom: none !important;
-    touch-action: manipulation;
+    touch-action: manipulation; /* Быстрый отклик на тап без задержки под двойной тап-зум */
   }
 
     .leaflet-control-zoom a:last-child {

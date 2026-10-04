@@ -4,40 +4,37 @@
 
       <!-- ЗАГОЛОВОК И ПОДЗАГОЛОВОК -->
       <div class="donate-cta">
-        <h1 class="donate-title">Поддержать <span class="accent-text">OrbitX</span></h1>
+        <h1 class="donate-title">Support <span class="accent-text">OrbitX</span></h1>
         <p class="donate-subtitle">
-          Любая сумма помогает проекту оставаться на связи и развиваться дальше.
+          Any amount helps the project stay connected and continue to grow.
         </p>
       </div>
 
       <!-- ДИСКЛЕЙМЕР О ПРОЕКТЕ И НАЗНАЧЕНИИ ДОНАТОВ -->
       <div class="disclaimer-box">
         <p>
-          OrbitX — это независимая некоммерческая платформа космического мониторинга, созданная для
-          популяризации астрономии, помощи студентам, ученым и любителям космоса.
+          OrbitX is an independent, nonprofit space monitoring platform created to promote astronomy and support students, scientists, and space enthusiasts.
         </p>
         <p>
-          У платформы нет инвесторов и навязчивой рекламы. Проект развивается исключительно благодаря
-          энтузиазму автора и поддержке сообщества.
+          The platform has no investors and no intrusive advertising. The project is driven solely by the creator's enthusiasm and the support of the community.
         </p>
-        <p>Все переводимые средства являются добровольными пожертвованиями (донатами) на безвозмездной основе. Они направляются на:</p>
+        <p>All funds transferred are voluntary donations made without compensation. They are used for:</p>
 
         <ul class="disclaimer-list">
-          <li>Поддержку автора проекта и мотивацию для дальнейшей разработки;</li>
-          <li>Оплату серверов и вычислительных мощностей бэкенда;</li>
-          <li>Разработку будущих этапов дорожной карты (симуляция телеметрии, геомагнитный трекинг и плавный 3D-глобус).</li>
+          <li>Support for the project's creator and motivation for further development;</li>
+          <li>Payment for servers and computing resources;</li>
+          <li>Development of future phases of the roadmap (telemetry, geomagnetic tracking, and a smooth 3D globe).</li>
         </ul>
 
         <p class="disclaimer-note">
-          Совершая перевод, вы поддерживаете независимого разработчика. Доход официально декларируется
-          в соответствии с законодательством РФ о самозанятых.
+          By making a donation, you are supporting an independent developer. The income is officially reported in accordance with Russian Federation law governing self-employed individuals.
         </p>
       </div>
 
       <!-- КНОПКА ОТКРЫТИЯ ФОРМЫ ПЕРЕВОДА -->
       <div class="donate-action">
         <button type="button" class="btn-donate" @click="isDonateOpen = true">
-          Поддержать проект
+          Support Project
         </button>
       </div>
 
@@ -47,8 +44,8 @@
     <div v-if="isDonateOpen" class="modal-overlay" @click.self="isDonateOpen = false">
       <div class="modal-box donate-modal-box">
         <div class="modal-header">
-          <h3 class="modal-title">Перевод на поддержку проекта</h3>
-          <button type="button" @click="isDonateOpen = false" class="modal-close-btn" aria-label="Закрыть">×</button>
+          <h3 class="modal-title">Donation to Support the Project</h3>
+          <button type="button" @click="isDonateOpen = false" class="modal-close-btn" aria-label="Close">×</button>
         </div>
 
         <div class="modal-body">

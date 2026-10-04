@@ -6,14 +6,14 @@
     <!-- Основная область для контента -->
     <main class="main-content">
       <div class="container">
-        <router-view /> <!-- Сюда роутер сам будет вставлять контент -->
+        <router-view /> <!-- Сюда роутер сам будет вставлять наш контент -->
       </div>
     </main>
 
     <!-- Вызываем подвал -->
     <AppFooter />
 
-    <button class="scroll-top-btn" v-show="isVisible" @click="scrollToTop" title="Наверх">↑</button>
+    <button class="scroll-top-btn" v-show="isVisible" @click="scrollToTop" title="Back to Top">↑</button>
   </div>
 </template>
 
@@ -51,8 +51,8 @@
 <style>
   .app-layout {
     display: flex;
-    flex-direction: column;
-    min-height: 100%;
+    flex-direction: column; /* Выстраивает элементы вертикально: Header -> Main -> Footer */
+    min-height: 100%; /* Растягивается минимум на всю высоту экрана */
   }
 
   .main-content {
@@ -60,20 +60,20 @@
   }
 
   .container {
-    max-width: 1200px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 0 20px;
+    max-width: 1200px; /* На больших мониторах контент не станет шире 1200px */
+    width: 100%; /* Если окно ПК станет меньше 1200px (например, 1000px),контейнер сожмется вместе с ним */
+    margin: 0 auto; /* Центрирование */
+    padding: 0 20px; /* Безопасные отступы, чтобы при сильном сжатии элементы не прилипали к краям */
   }
 
   .scroll-top-btn {
     position: fixed;
     bottom: 40px;
-    left: 40px;
+    left: 40px; /* Размещаем строго слева */
     width: 45px;
     height: 45px;
     border-radius: 50%;
-    background-color: #141414;
+    background-color: #141414; /* Темный фон в цвет блоков */
     border: 1px solid #2d2d2d;
     color: #94a3b8;
     font-size: 20px;
@@ -82,7 +82,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 99;
+    z-index: 99; /* Чтобы кнопка всегда была поверх картинок и радара */
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
     transition: all 0.3s ease;
   }
@@ -93,12 +93,12 @@
       background-color: #ea75a2;
       border-color: #ea75a2;
       box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
-      transform: translateY(-3px);
+      transform: translateY(-3px); /* Кнопка слегка приподнимается */
     }
 
   @media (max-width: 768px) {
     .container {
-      padding: 0 16px;
+      padding: 0 16px; /* Чуть уже отступы, чтобы не "съедать" контент на узких экранах */
     }
 
     .scroll-top-btn {

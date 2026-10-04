@@ -8,11 +8,11 @@
         <!-- Ряд 1: Поиск по ID/названию + кнопка-лупа -->
         <div class="filters-row row-one">
           <div class="main-search">
-            <input v-model="searchQuery" type="text" placeholder="Поиск спутника по названию или ID..." class="form-input" @keyup.enter="handleTopSearch" />
+            <input v-model="searchQuery" type="text" placeholder="Search for a satellite by name or ID..." class="form-input" @keyup.enter="handleTopSearch" />
           </div>
           <!-- Кнопка-поиск: определяет число это или текст и дергает нужный метод API -->
-          <button type="button" class="btn-search-small" title="Найти по названию/ID" @click="handleTopSearch">
-            ПОИСК
+          <button type="button" class="btn-search-small" title="Search by name/ID" @click="handleTopSearch">
+            SEARCH
           </button>
         </div>
 
@@ -22,7 +22,7 @@
           <!-- 1. Выпадающий список категорий CelesTrak -->
           <div class="filter-item">
             <select v-model="selectedCategory" class="form-select">
-              <option value="all">Выбрать категорию группировки</option>
+              <option value="all">Select a grouping category</option>
               <optgroup label="Weather & Earth Resources Satellites">
                 <option value="weather">Weather</option>
                 <option value="resource">Earth Resources</option>
@@ -80,23 +80,23 @@
           <!-- 2. Сортировка по Id/Названию -->
           <div class="filter-item">
             <select v-model="sortBy" class="form-select">
-              <option value="id">Сортировать по NORAD ID</option>
-              <option value="name">Сортировать по Названию</option>
+              <option value="id">Sort by NORAD ID</option>
+              <option value="name">Sort by Name</option>
             </select>
           </div>
 
           <!-- 3. Сколько отображать за раз 25/50/100 -->
           <div class="filter-item item-short">
             <select v-model="pageSize" class="form-select">
-              <option value="25">25 на странице</option>
-              <option value="50">50 на странице</option>
-              <option value="100">100 на странице</option>
+              <option value="25">25 per page</option>
+              <option value="50">50 per page</option>
+              <option value="100">100 per page</option>
             </select>
           </div>
 
           <!-- 4. КНОПКА ПОИСКА ВО ВТОРОМ РЯДУ -->
           <div class="filter-action">
-            <button type="button" @click="handleSearch" class="btn-search-submit">ПОИСК</button>
+            <button type="button" @click="handleSearch" class="btn-search-submit">SEARCH</button>
           </div>
 
         </div>
@@ -109,14 +109,14 @@
             <thead>
               <tr>
                 <th style="width: 25%">NoradId</th>
-                <th style="width: 50%">Название спутника</th>
-                <th style="width: 25%; text-align: center;">Моделирование</th>
+                <th style="width: 50%">Satellite Name</th>
+                <th style="width: 25%; text-align: center;">Tracking</th>
               </tr>
             </thead>
             <tbody>
               <tr v-if="satellites.length === 0">
                 <td colspan="3" style="text-align: center; color: #64748b; padding: 40px 0;">
-                  Выберите категорию группировки и нажмите кнопку «Поиск» для загрузки данных
+                  Select a grouping category and click the “Search” button to load the data
                 </td>
               </tr>
 
@@ -125,7 +125,7 @@
                 <td class="td-name">{{ sat.name }}</td>
                 <td class="td-action">
                   <router-link :to="{ name: 'satellites-modeling', params: { satellite_id: sat.noradId } }" class="btn-modeling">
-                    Запустить
+                    Run
                   </router-link>
                 </td>
               </tr>
@@ -135,12 +135,26 @@
 
         <!-- ПАНЕЛЬ ПОСТРАНИЧНОЙ НАВИГАЦИИ -->
         <div v-if="satellites.length > 0" class="pagination-panel">
-          <button type="button" @click="prevPage" class="pag-btn prev-btn" title="Предыдущая страница">‹</button>
+
+          <!-- Стрелка НАЗАД -->
+          <router-link :to="{ query: { category: selectedCategory, sortBy: sortBy, pageSize: pageSize, page: currentPage > 1 ? currentPage - 1 : 1 } }"
+                       class="pag-btn prev-btn"
+                       title="Previous Page">
+            ‹
+          </router-link>
+
           <div class="pag-input-wrapper">
-            <!-- При ручном вводе передаем текущее вбитое число -->
-            <input v-model.number="currentPage" type="number" min="1" class="pag-input" @change="fetchSatellites(currentPage)" title="Введите страницу и нажмите Enter" />
+            <!-- Для ручного ввода оставляем инпут, при изменении он обновит URL-адрес страницы -->
+            <input v-model.number="currentPage" type="number" min="1" class="pag-input" @change="updateUrlQuery" title="Enter the page number and press “Enter”" />
           </div>
-          <button type="button" @click="nextPage" class="pag-btn next-btn" title="Следующая страница">›</button>
+
+          <!-- Стрелка ВПЕРЕД -->
+          <router-link :to="{ query: { category: selectedCategory, sortBy: sortBy, pageSize: pageSize, page: currentPage + 1 } }"
+                       class="pag-btn next-btn"
+                       title="Next Page">
+            ›
+          </router-link>
+
         </div>
 
       </div>
@@ -151,7 +165,7 @@
     <div v-if="toast.show" class="toast-notification">
       <div class="toast-icon">📡</div>
       <div class="toast-body">
-        <h5 class="toast-title">Информационное сообщение</h5>
+        <h5 class="toast-title">Information Bulletin</h5>
         <p class="toast-text">{{ toast.message }}</p>
       </div>
       <button type="button" @click="closeToast" class="toast-close-btn">×</button>
@@ -160,22 +174,25 @@
 </template>
 
 <script setup lang="ts">
-  import { ref } from 'vue'
+  import { ref, onMounted, watch } from 'vue'
+  import { useRoute, useRouter } from 'vue-router'
 
-  // Описание интерфейса объекта спутника
   interface Satellite {
     noradId: number
     name: string
   }
 
-  // 1. Переменные для двусторонней связи (v-model) с HTML-полями
-  const searchQuery = ref('')         // Строка поиска по ключевым словам (верхнее поле: ID или имя)
-  const selectedCategory = ref('all')   // Категория группировки (изначально "all")
-  const sortBy = ref('id')             // Метод сортировки: 'id' (для FiltersById) или 'name' (для FiltersByName)
-  const pageSize = ref(25)            // Количество строк на странице (по умолчанию 25)
-  const currentPage = ref(1)          // Номер текущей страницы пагинации
+  const route = useRoute()
+  const router = useRouter()
 
-  // Массив спутников, полученный с бэкенда (изначально пустой)
+  // 1. Переменные для двусторонней связи (v-model) с HTML-полями
+  const searchQuery = ref('')
+  const selectedCategory = ref((route.query.category as string) || 'weather')
+  const sortBy = ref((route.query.sortBy as string) || 'id')
+  const pageSize = ref(Number(route.query.pageSize) || 25)
+  const currentPage = ref(Number(route.query.page) || 1)
+
+  // Массив спутников, полученный с бэкенда
   const satellites = ref<Satellite[]>([])
 
   // Состояние всплывающего уведомления
@@ -186,7 +203,6 @@
 
   let toastTimeout: number | null = null
 
-  // Функция для вызова всплывающего окна уведомления
   const showNotification = (msg: string) => {
     if (toastTimeout) clearTimeout(toastTimeout)
     toast.value.message = msg
@@ -196,13 +212,11 @@
     }, 4000)
   }
 
-  // Функция для ручного закрытия уведомления по крестику
   const closeToast = () => {
     toast.value.show = false
     if (toastTimeout) clearTimeout(toastTimeout)
   }
 
-  // Ответ бэкенда содержит больше полей, чем нужно таблице (долгота/широта/высота)
   interface SGP4DataDTO {
     noradId: number
     name: string
@@ -211,30 +225,23 @@
     altitude?: number
   }
 
-  // Берём из DTO только то, что реально нужно таблице
   const mapToSatellite = (dto: SGP4DataDTO): Satellite => ({
     noradId: dto.noradId,
     name: dto.name
   })
 
-  // Проверка: можно ли строку целиком превратить в число (NORAD ID)
-  // Пустая строка и строки с "мусором" числом не считаются
   const isNoradId = (value: string): boolean => {
     if (value.trim() === '') return false
     return !isNaN(Number(value)) && !isNaN(parseFloat(value))
   }
 
-  // Главный обработчик верхнего поиска
   const handleTopSearch = async () => {
     const query = searchQuery.value.trim()
-
     if (query === '') {
-      showNotification('Введите название спутника или NORAD ID для поиска')
+      showNotification('Enter the satellite name or NORAD ID to search')
       return
     }
-
     currentPage.value = 1
-
     if (isNoradId(query)) {
       await fetchSatelliteById(Number(query))
     } else {
@@ -242,84 +249,71 @@
     }
   }
 
-  // Запрос спутника по NORAD ID → GetDataById
   const fetchSatelliteById = async (noradId: number) => {
     try {
       const url = new URL(`${window.location.origin}/api/v1/GetDataById`)
       url.searchParams.append('noradId', noradId.toString())
-
       const response = await fetch(url.toString())
-
       if (response.status === 404) {
-        showNotification(`Спутник с NORAD ID ${noradId} не найден`)
+        showNotification(`The satellite with NORAD ID ${noradId} was not found`)
         satellites.value = []
         return
       }
-
       if (response.ok) {
         const data = await response.json()
-        // Бэкенд может вернуть как один объект, так и массив — приводим к единому виду
         const list: SGP4DataDTO[] = Array.isArray(data) ? data : [data]
         satellites.value = list.map(mapToSatellite)
         return
       }
-
-      // Любой другой неуспешный статус (400, 500 и т.д.) — показываем явно
-      const bodyText = await response.text().catch(() => '')
-      console.error('Ошибка бэкенда:', response.status, response.statusText, bodyText)
-      showNotification(`Не удалось получить данные о спутнике (код ${response.status})`)
     } catch (error) {
-      console.error('Не удалось связаться с сервером', error)
-      showNotification('Ошибка соединения с сервером')
+      console.error(error)
     }
   }
 
-  // Запрос спутника по названию → GetDataByName
   const fetchSatelliteByName = async (name: string) => {
     try {
       const url = new URL(`${window.location.origin}/api/v1/GetDataByName`)
       url.searchParams.append('satelliteName', name)
-
       const response = await fetch(url.toString())
-
       if (response.status === 404) {
-        showNotification(`Спутник «${name}» не найден.`)
+        showNotification(`The “${name}” satellite was not found`)
         satellites.value = []
         return
       }
-
       if (response.ok) {
         const data = await response.json()
         const list: SGP4DataDTO[] = Array.isArray(data) ? data : [data]
         satellites.value = list.map(mapToSatellite)
         return
       }
-
-      const bodyText = await response.text().catch(() => '')
-      console.error('Ошибка бэкенда:', response.status, response.statusText, bodyText)
-      showNotification(`Не удалось получить данные о спутнике (код ${response.status}).`)
     } catch (error) {
-      console.error('Не удалось связаться с сервером .NET:', error)
-      showNotification('Ошибка соединения с сервером.')
+      console.error(error)
     }
   }
 
-  // 2. Функция первичного поиска (По большой розовой кнопке)
+  // 2. Функция ручного поиска по большой розовой кнопке
   const handleSearch = () => {
     if (selectedCategory.value === 'all') {
-      showNotification('Пожалуйста, выберите категорию спутников перед началом поиска')
+      showNotification('Please select a satellite category before starting your search')
       return
     }
 
-    // Сначала синхронно сбрасываем инпут на 1 во Vue для визуального отображения
     currentPage.value = 1
 
-    // Вызываем сетевой метод и заставляем его слать цифру 1 в аргументе
+    // Сначала пушим в URL (для SEO-роботов и истории браузера)
+    router.push({
+      query: {
+        category: selectedCategory.value,
+        sortBy: sortBy.value,
+        pageSize: pageSize.value.toString(),
+        page: '1'
+      }
+    })
+    // База данных обновится в любом случае, даже если фильтры те же самые
     fetchSatellites(1)
   }
 
-  // 3. Главная функция запроса
-  // Она принимает точный номер страницы, который нужно отправить в базу данных
+  // 3. Главная функция запроса к ASP.NET
   const fetchSatellites = async (targetPage: number = currentPage.value) => {
     try {
       const endpoint = sortBy.value === 'id'
@@ -328,62 +322,89 @@
 
       const url = new URL(`${window.location.origin}${endpoint}`)
       url.searchParams.append('category', selectedCategory.value)
-
-      /*
-         Мы шлем строго то число, которое пришло в аргументе функции (targetPage)
-         Если вызван поиск, там будет чистая цифра 1. Vue не сможет подсунуть другую страницу
-      */
       url.searchParams.append('page', targetPage.toString())
       url.searchParams.append('pageSize', pageSize.value.toString())
 
       const response = await fetch(url.toString())
 
       if (response.status === 404) {
-        showNotification('Вы достигли конца списка. Дальнейших спутников в этой категории не обнаружено')
+        showNotification('You have reached the end of the list. No more satellites were found in this category.')
         if (currentPage.value > 1) {
           currentPage.value--
+          updateUrlQuery()
         }
         return
       }
 
       if (response.ok) {
         const data = await response.json()
-
         if (data.length === 0) {
-          showNotification('Вы достигли конца списка. Дальнейших спутников в этой категории не обнаружено')
+          showNotification('You have reached the end of the list. No more satellites were found in this category.')
           if (currentPage.value > 1) {
             currentPage.value--
+            updateUrlQuery()
           }
           return
         }
-
         satellites.value = data
         return
       }
-
-      // Любой другой неуспешный статус (400, 500 и т.д.) — показываем явно
-      const bodyText = await response.text().catch(() => '')
-      console.error('Ошибка бэкенда:', response.status, response.statusText, bodyText)
-      showNotification(`Не удалось загрузить список спутников (код ${response.status})`)
     } catch (error) {
-      console.error('Не удалось связаться с сервером', error)
-      showNotification('Ошибка соединения с сервером')
+      console.error('Ошибка соединения с сервером', error)
     }
   }
 
-  // Методы пагинации передают измененное состояние в аргумент явно
-  const nextPage = () => {
-    currentPage.value++
-    fetchSatellites(currentPage.value)
+  const updateUrlQuery = () => {
+    router.replace({
+      query: {
+        category: selectedCategory.value,
+        sortBy: sortBy.value,
+        pageSize: pageSize.value.toString(),
+        page: currentPage.value.toString()
+      }
+    })
   }
 
-  const prevPage = () => {
-    if (currentPage.value > 1) {
-      currentPage.value--
+  // При первом заходе на страницу прописываем query-параметры в URL
+  onMounted(() => {
+    if (!route.query.page) {
+      router.replace({
+        query: {
+          category: selectedCategory.value,
+          sortBy: sortBy.value,
+          pageSize: pageSize.value.toString(),
+          page: '1'
+        }
+      })
+      fetchSatellites(1)
+    } else {
       fetchSatellites(currentPage.value)
     }
-  }
+  })
+
+  // Теперь он срабатывает тогда, когда пользователь или робот переходят по страницам пагинации (через стрелочки), меняя URL
+  watch(
+    () => route.query,
+    (newQuery) => {
+      const queryPage = Number(newQuery.page) || 1
+      const queryCategory = (newQuery.category as string) || 'weather'
+      const querySortBy = (newQuery.sortBy as string) || 'id'
+      const queryPageSize = Number(newQuery.pageSize) || 25
+
+      // Если изменился именно номер страницы (например, робот кликнул пагинацию)
+      if (queryPage !== currentPage.value) {
+        currentPage.value = queryPage
+        selectedCategory.value = queryCategory
+        sortBy.value = querySortBy
+        pageSize.value = queryPageSize
+
+        fetchSatellites(currentPage.value)
+      }
+    },
+    { deep: true }
+  )
 </script>
+
 
 <style scoped>
   .catalog-section {
@@ -430,7 +451,7 @@
     padding-bottom: 1px;
     font-family: "Exo 2", sans-serif;
     font-weight: 600;
-    touch-action: manipulation;
+    touch-action: manipulation; /* Убирает 300мс задержку тапа и случайный зум по двойному тапу на мобильных */
   }
 
     .btn-search-small:hover,
@@ -471,7 +492,7 @@
     outline: none;
     transition: border-color 0.2s ease;
     font-family: "Exo 2", sans-serif;
-    touch-action: manipulation;
+    touch-action: manipulation; /* Быстрее реагируют на тап, без задержки под двойной тап-зум */
   }
 
   .form-select {
@@ -504,6 +525,10 @@
     margin-top: 1px;
     font-family: "Exo 2", sans-serif;
     touch-action: manipulation;
+    width: 107.88px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
   }
 
     .btn-search-submit:hover,
@@ -693,7 +718,7 @@
        элементы "уезжают" и перестают откликаться на нажатия. Держим 16px. */
     .form-input, .form-select {
       font-size: 16px;
-      height: 46px;
+      height: 46px; /* Чуть выше — удобнее попадать пальцем */
     }
 
     .btn-search-small,
@@ -753,8 +778,8 @@
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    z-index: 1000;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 1000; /* Поверх всех таблиц и кнопок */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Объемная тень под коробкой */
     animation: slide-in 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -815,7 +840,7 @@
     font-size: 20px;
     line-height: 1;
     cursor: pointer;
-    padding: 8px;
+    padding: 8px; /* Увеличенная зона нажатия под палец, визуально компенсируем отрицательным отступом */
     margin: -8px -8px -8px 0;
     touch-action: manipulation;
     transition: color 0.2s ease;

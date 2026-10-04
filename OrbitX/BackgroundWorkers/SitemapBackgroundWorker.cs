@@ -60,7 +60,7 @@ namespace OrbitX.BackgroundWorkers
                             foreach (var sat in listIdsSatellites)
                             {
                                 urlset.Add(new XElement(ns + "url",
-                                    new XElement(ns + "loc", $"{BASE_URL}/satellites_modeling/{sat.NORAD_CAT_ID}"),
+                                    new XElement(ns + "loc", $"{BASE_URL}/satellites-modeling/{sat.NORAD_CAT_ID}"),
                                     new XElement(ns + "lastmod", sat.UpdatedAt.ToString("yyyy-MM-dd")),
                                     new XElement(ns + "changefreq", "daily"),
                                     new XElement(ns + "priority", "0.7")
@@ -107,7 +107,7 @@ namespace OrbitX.BackgroundWorkers
             var staticPages = new[]
             {
                 new { Loc = "/", ChangeFreq = "weekly", Priority = "1.0" },
-                new { Loc = "/satellites_modeling", ChangeFreq = "daily", Priority = "0.9" },
+                new { Loc = "/satellites-modeling", ChangeFreq = "daily", Priority = "0.9" },
                 new { Loc = "/donate", ChangeFreq = "monthly", Priority = "0.6" },
                 new { Loc = "/privacy", ChangeFreq = "yearly", Priority = "0.3" },
                 new { Loc = "/terms", ChangeFreq = "yearly", Priority = "0.3" },
