@@ -11,5 +11,8 @@ namespace Core.Modules.SatelliteData.Domain.Interfaces
     {
         Task<List<Satellite>> GetSatellitesFiltersById(string category, int page, int pageSize = 50);
         Task<List<Satellite>> GetSatellitesFiltersByName(string category, int page, int pageSize = 50);
+
+        Task<List<Satellite>> GetDataById(int noradId);
+        Task<List<Satellite>> GetDataByName(string satelliteName);
     }
 }

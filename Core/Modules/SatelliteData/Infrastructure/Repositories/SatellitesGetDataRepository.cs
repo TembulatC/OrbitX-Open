@@ -1,19 +1,23 @@
 ﻿using Core.Modules.SatelliteData.Domain.Interfaces;
 using Core.Modules.SatelliteData.Domain.Models;
 using Core.Modules.SatelliteData.Infrastructure.DBContext;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 
 namespace Core.Modules.SatelliteData.Infrastructure.Repositories
 {
-    public class SatellitesGetDataRepository : ISatellitesGetDataRepository
+    public partial class SatellitesGetDataRepository : ISatellitesGetDataRepository
     {
         private readonly OMMDBContext _dbContext;
+        private readonly ILogger<SatellitesGetDataRepository> _logger;
         private readonly IMemoryCache _cache;
-        
-        public SatellitesGetDataRepository(OMMDBContext dbContext, IMemoryCache cache)
+
+        public SatellitesGetDataRepository(OMMDBContext dbContext, ILogger<SatellitesGetDataRepository> logger, IMemoryCache cache)
         {
             _dbContext = dbContext;
+            _logger = logger;
             _cache = cache;
         }
 
@@ -119,7 +123,113 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
                 .ToListAsync();
 
             if (satellitesList == null || !satellitesList.Any()) return new List<Satellite>();
-            
+
+            return satellitesList;
+        }
+
+        public async Task<List<Satellite>> GetDataById(int noradId)
+        {
+            LogLaunchById(noradId);
+
+            if (noradId < 0)
+            {
+                LogNegativeNumber();
+                return new List<Satellite>();
+            }
+
+            // Формируем уникальный ключ для кеша
+            string cacheKey = $"satellites_find:{noradId}";
+
+            // Проверяем, есть ли уже данные в кеше
+            if (!_cache.TryGetValue(cacheKey, out List<Satellite>? satellitesList))
+            {
+                satellitesList = await _dbContext.Satellites
+                    .Where(s => s.NORAD_CAT_ID.ToString().Contains(noradId.ToString()))
+                    .OrderBy(s => s.NORAD_CAT_ID)
+                    .ToListAsync();
+
+                if (satellitesList != null || satellitesList?.Count <= 0)
+                {
+                    LogSuccessById();
+
+                    // Сохраняем в кеш 
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                    // Категория удалится из памяти через 30 минут
+                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(30))
+                    // Задаем высокий приоритет, чтобы сборщик мусора (GC) не снес ее принудительно
+                    .SetPriority(CacheItemPriority.High);
+
+                    _cache.Set(cacheKey, satellitesList, cacheOptions);
+                }
+                else
+                {
+                    // Сохраняем в короткий кеш для защиты от спама поиска несуществующих спутников
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                    // Спутник удалится из памяти через 30 секунд
+                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
+
+                    // Записываем OMM-сущность из базы в оперативную память сервера
+                    _cache.Set(cacheKey, satellitesList, cacheOptions);
+
+                    LogNotFoundById(noradId);
+                }
+            }
+
+            if (satellitesList == null || !satellitesList.Any()) return new List<Satellite>();
+
+            return satellitesList;
+        }
+
+        public async Task<List<Satellite>> GetDataByName(string satelliteName)
+        {
+            LogLaunchByName(satelliteName);
+
+            if (string.IsNullOrEmpty(satelliteName))
+            {
+                LogCancelNullByName();
+                return new List<Satellite>();
+            }
+
+            // Формируем уникальный ключ для кеша
+            string cacheKey = $"satellites_find:{satelliteName}";
+
+            // Проверяем, есть ли уже данные в кеше
+            if (!_cache.TryGetValue(cacheKey, out List<Satellite>? satellitesList))
+            {
+                satellitesList = await _dbContext.Satellites
+                    .Where(s => s.OBJECT_NAME.Contains(satelliteName.ToUpper()))
+                    .OrderBy(s => s.OBJECT_NAME)
+                    .ToListAsync();
+
+                if (satellitesList != null || satellitesList?.Count <= 0)
+                {
+                    LogSuccessByName();
+
+                    // Сохраняем в кеш 
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                    // Категория удалится из памяти через 30 минут
+                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(30))
+                    // Задаем высокий приоритет, чтобы сборщик мусора (GC) не снес ее принудительно
+                    .SetPriority(CacheItemPriority.High);
+
+                    _cache.Set(cacheKey, satellitesList, cacheOptions);
+                }
+                else
+                {
+                    // Сохраняем в короткий кеш для защиты от спама поиска несуществующих спутников
+                    var cacheOptions = new MemoryCacheEntryOptions()
+                    // Спутник удалится из памяти через 30 секунд
+                    .SetAbsoluteExpiration(TimeSpan.FromSeconds(30));
+
+                    // Записываем OMM-сущность из базы в оперативную память сервера
+                    _cache.Set(cacheKey, satellitesList, cacheOptions);
+
+                    LogNotFoundByName(satelliteName);
+                }
+            }
+
+            if (satellitesList == null || !satellitesList.Any()) return new List<Satellite>();
+
             return satellitesList;
         }
     }

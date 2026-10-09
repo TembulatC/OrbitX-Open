@@ -40,6 +40,65 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
             Message = "Данные по спутникам успешно обновлены")]
         private partial void LogUpdateDataCts();
     }
+
+    public partial class SatellitesGetDataRepository
+    {
+        #region GetDatayID
+
+        [LoggerMessage(
+            EventId = 901,
+            Level = LogLevel.Information,
+            Message = "Запуск получения данных спутника с ID {NoradId} из базы данных")]
+        private partial void LogLaunchById(int noradId);
+
+        [LoggerMessage(
+            EventId = 902,
+            Level = LogLevel.Warning,
+            Message = "Отмена получения данных. ID спутника не может быть отрицательным")]
+        private partial void LogNegativeNumber();
+
+        [LoggerMessage(
+            EventId = 903,
+            Level = LogLevel.Information,
+            Message = "Данные о спутнике успешно получены")]
+        private partial void LogSuccessById();
+
+        [LoggerMessage(
+            EventId = 904,
+            Level = LogLevel.Warning,
+            Message = "Спутника с ID {NoradId} не существует в базе данных")]
+        private partial void LogNotFoundById(int noradId);
+
+        #endregion
+
+        #region GetDataByName
+
+        [LoggerMessage(
+            EventId = 905,
+            Level = LogLevel.Information,
+            Message = "Запуск получения данных спутника {SatelliteName} из базы данных")]
+        private partial void LogLaunchByName(string satelliteName);
+
+        [LoggerMessage(
+            EventId = 906,
+            Level = LogLevel.Warning,
+            Message = "Отмена получения данных. Имя спутника не может быть пустым")]
+        private partial void LogCancelNullByName();
+
+        [LoggerMessage(
+            EventId = 907,
+            Level = LogLevel.Information,
+            Message = "Данные о спутнике успешно получены")]
+        private partial void LogSuccessByName();
+
+        [LoggerMessage(
+            EventId = 908,
+            Level = LogLevel.Warning,
+            Message = "Спутника {SatelliteName} не существует в базе данных")]
+        private partial void LogNotFoundByName(string satelliteName);
+
+        #endregion
+    }
 }
 
 namespace Core.Modules.SatelliteData.Infrastructure.HttpClients
