@@ -154,7 +154,7 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
 
                     // Сохраняем в кеш 
                     var cacheOptions = new MemoryCacheEntryOptions()
-                    // Категория удалится из памяти через 30 минут
+                    // Категория удалится из памяти через 30 секунд
                     .SetAbsoluteExpiration(TimeSpan.FromSeconds(30))
                     // Задаем высокий приоритет, чтобы сборщик мусора (GC) не снес ее принудительно
                     .SetPriority(CacheItemPriority.High);
@@ -207,7 +207,7 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
 
                     // Сохраняем в кеш 
                     var cacheOptions = new MemoryCacheEntryOptions()
-                    // Категория удалится из памяти через 30 минут
+                    // Категория удалится из памяти через 30 секунд
                     .SetAbsoluteExpiration(TimeSpan.FromSeconds(30))
                     // Задаем высокий приоритет, чтобы сборщик мусора (GC) не снес ее принудительно
                     .SetPriority(CacheItemPriority.High);

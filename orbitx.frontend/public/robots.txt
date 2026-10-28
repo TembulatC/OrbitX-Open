@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+Allow: /ws/satellite/negotiate
+Allow: /api/v1/GetDataById
 Disallow: /api/
 Disallow: /ws/
 

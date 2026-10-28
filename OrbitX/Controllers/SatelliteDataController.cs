@@ -28,6 +28,8 @@ namespace OrbitX.Controllers
             _env = env;
         }
 
+        #region swagger endpoints
+
         [HttpPost]
         [Route("[action]")]
         public async Task<IActionResult> AddSatelliteData(string satellitesCategory)
@@ -53,6 +55,8 @@ namespace OrbitX.Controllers
         [Route("[action]")]
         public async Task<IActionResult> GetSGPByIdLog(int noradId)
         {
+            if (_env.IsProduction()) return NotFound("404"); // Возвращаем 404, если кто-то к нему обращается в проде
+
             LogLaunchGetById(noradId);
 
             if (noradId < 0)
@@ -77,6 +81,8 @@ namespace OrbitX.Controllers
         [Route("[action]")]
         public async Task<IActionResult> GetSGPByNameLog(string satelliteName)
         {
+            if (_env.IsProduction()) return NotFound("404"); // Возвращаем 404, если кто-то к нему обращается в проде
+
             LogLaunchGetByName(satelliteName);
 
             if (string.IsNullOrWhiteSpace(satelliteName))
@@ -97,63 +103,13 @@ namespace OrbitX.Controllers
             return Ok(satelliteSPG);
         }
 
-
-        // 2 метода для получения SGP данных спутников в обход логгирования
-        [HttpGet]
-        [Route("[action]")]
-        public async Task<IActionResult> GetSGPById(int noradId)
-        {
-            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
-            {
-                if (noradId < 0)
-                {
-                    return BadRequest("NoradId не может быть отрицательным");
-                }
-
-                var satelliteSPG = await _satelliteSGPServices.GetSGPByID(noradId);
-
-                if (satelliteSPG == null)
-                {
-                    LogCancelNullById();
-                    return NotFound($"Данных о спутнике с ID {noradId} не существует либо произошел сбой в математических расчетах SGP4");
-                }
-
-                return Ok(satelliteSPG);
-            }
-        }
-
-        [HttpGet]
-        [Route("[action]")]
-        public async Task<IActionResult> GetSGPByName(string satelliteName)
-        {
-            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
-            {
-                if (string.IsNullOrWhiteSpace(satelliteName))
-                {
-                    return BadRequest("Имя спутника не может быть пустым");
-                }
-
-                var satelliteSPG = await _satelliteSGPServices.GetSGPByName(satelliteName.ToUpper());
-
-                if (satelliteSPG == null)
-                {
-                    return NotFound($"Данных о спутнике {satelliteName} не существует либо произошел сбой в математических расчетах SGP4");
-                }
-
-                return Ok(satelliteSPG);
-            }
-        }
-
-
         // 2 метода для получения данных спутников без обхода логгирования
         [HttpGet]
         [Route("[action]")]
         public async Task<IActionResult> GetDataByIdLog(int noradId)
         {
-            if (noradId < 0)
-            {
-                return BadRequest("NoradId не может быть отрицательным");
-            }
+            if (_env.IsProduction()) return NotFound("404"); // Возвращаем 404, если кто-то к нему обращается в проде
+            if (noradId < 0) return BadRequest("NoradId не может быть отрицательным");
 
             var satellitesList = await _satelliteGetService.GetDataById(noradId);
 
@@ -170,10 +126,8 @@ namespace OrbitX.Controllers
         [Route("[action]")]
         public async Task<IActionResult> GetDataByNameLog(string satelliteName)
         {
-            if (string.IsNullOrWhiteSpace(satelliteName))
-            {
-                return BadRequest("Имя спутника не может быть пустым");
-            }
+            if (_env.IsProduction()) return NotFound("404"); // Возвращаем 404, если кто-то к нему обращается в проде
+            if (string.IsNullOrWhiteSpace(satelliteName)) return BadRequest("Имя спутника не может быть пустым");
 
             var satellitesList = await _satelliteGetService.GetDataByName(satelliteName);
 
@@ -185,94 +139,6 @@ namespace OrbitX.Controllers
 
             return Ok(satellitesList);
         }
-
-        // 2 метода для получения данных спутников в обход логгирования
-        [HttpGet]
-        [Route("[action]")]
-        public async Task<IActionResult> GetDataById(int noradId)
-        {
-            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
-            {
-                if (noradId < 0)
-                {
-                    return BadRequest("NoradId не может быть отрицательным");
-                }
-
-                var satellitesList = await _satelliteGetService.GetDataById(noradId);
-
-                if (satellitesList == null || satellitesList.Count <= 0)
-                {
-                    LogCancelNullById();
-                    return NotFound($"Данные о спутниках в ID которых входит {noradId} не найдены");
-                }
-
-                return Ok(satellitesList);
-            }
-        }
-
-        [HttpGet]
-        [Route("[action]")]
-        public async Task<IActionResult> GetDataByName(string satelliteName)
-        {
-            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
-            {
-                if (string.IsNullOrWhiteSpace(satelliteName))
-                {
-                    return BadRequest("Имя спутника не может быть пустым");
-                }
-
-                var satellitesList = await _satelliteGetService.GetDataByName(satelliteName);
-
-                if (satellitesList == null || satellitesList.Count <= 0)
-                {
-                    LogCancelNullById();
-                    return NotFound($"Данные о спутниках в имя которых входит {satelliteName} не найдены");
-                }
-
-                return Ok(satellitesList);
-            }
-        }
-
-
-        // 2 метода для получения данных спутников по фильтру
-        [HttpGet]
-        [Route("[action]")]
-        public async Task<IActionResult> GetSatellitesFiltersById(string category, int page, int pageSize = 25)
-        {
-            if (string.IsNullOrWhiteSpace(category))
-            {
-                return BadRequest("Категория спутников не может быть пустой");
-            }
-
-            var satellitesList = await _satelliteGetService.GetSatellitesFiltersById(category, page, pageSize);
-
-            if (satellitesList == null || satellitesList.Count <= 0)
-            {
-                return NotFound($"Данных о категории {category} не существует");
-            }
-
-            return Ok(satellitesList);
-        }
-
-        [HttpGet]
-        [Route("[action]")]
-        public async Task<IActionResult> GetSatellitesFiltersByName(string category, int page, int pageSize = 25)
-        {
-            if (string.IsNullOrWhiteSpace(category))
-            {
-                return BadRequest("Категория спутников не может быть пустой");
-            }
-
-            var satellitesList = await _satelliteGetService.GetSatellitesFiltersByName(category, page, pageSize);
-
-            if (satellitesList == null || satellitesList.Count <= 0)
-            {
-                return NotFound($"Данных о категории {category} не существует");
-            }
-
-            return Ok(satellitesList);
-        }
-
 
         // Имитируем вход пользователя на страницу спутника
         [HttpPost("start-test/{noradId:int}")]
@@ -296,6 +162,113 @@ namespace OrbitX.Controllers
             _worker.OnSatelliteUnwatched(noradId);
 
             return Ok($"Сигнал остановки отправлен для ID: {noradId}");
+        }
+
+        #endregion
+
+        // 2 метода для получения SGP данных спутников в обход логгирования
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetSGPById(int noradId)
+        {
+            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
+            {
+                if (noradId < 0) return BadRequest("NoradId не может быть отрицательным");
+
+                var satelliteSPG = await _satelliteSGPServices.GetSGPByID(noradId);
+                if (satelliteSPG == null)
+                {
+                    LogCancelNullById();
+                    return NotFound($"Данных о спутнике с ID {noradId} не существует либо произошел сбой в математических расчетах SGP4");
+                }
+
+                return Ok(satelliteSPG);
+            }
+        }
+
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetSGPByName(string satelliteName)
+        {
+            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
+            {
+                if (string.IsNullOrWhiteSpace(satelliteName)) return BadRequest("Имя спутника не может быть пустым");
+
+                var satelliteSPG = await _satelliteSGPServices.GetSGPByName(satelliteName.ToUpper());
+                if (satelliteSPG == null)
+                {
+                    LogCancelNullByName();
+                    return NotFound($"Данных о спутнике {satelliteName} не существует либо произошел сбой в математических расчетах SGP4");
+                }
+
+                return Ok(satelliteSPG);
+            }
+        }
+
+
+        // 2 метода для получения данных спутников в обход логгирования
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetDataById(int noradId)
+        {
+            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
+            {
+                if (noradId < 0) return BadRequest("NoradId не может быть отрицательным");
+
+                var satellitesList = await _satelliteGetService.GetDataById(noradId);
+                if (satellitesList == null || satellitesList.Count <= 0)
+                {
+                    LogCancelNullById();
+                    return NotFound($"Данные о спутниках в ID которых входит {noradId} не найдены");
+                }
+
+                return Ok(satellitesList);
+            }
+        }
+
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetDataByName(string satelliteName)
+        {
+            using (LogContext.PushProperty("RequestSource", "Worker or Special"))
+            {
+                if (string.IsNullOrWhiteSpace(satelliteName)) return BadRequest("Имя спутника не может быть пустым");
+
+                var satellitesList = await _satelliteGetService.GetDataByName(satelliteName);
+                if (satellitesList == null || satellitesList.Count <= 0)
+                {
+                    LogCancelNullByName();
+                    return NotFound($"Данные о спутниках в имя которых входит {satelliteName} не найдены");
+                }
+
+                return Ok(satellitesList);
+            }
+        }
+
+
+        // 2 метода для получения данных спутников по фильтру
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetSatellitesFiltersById(string category, int page, int pageSize = 25)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return BadRequest("Категория спутников не может быть пустой");
+
+            var satellitesList = await _satelliteGetService.GetSatellitesFiltersById(category, page, pageSize);
+            if (satellitesList == null || satellitesList.Count <= 0) return NotFound($"Данных о категории {category} не существует");
+
+            return Ok(satellitesList);
+        }
+
+        [HttpGet]
+        [Route("[action]")]
+        public async Task<IActionResult> GetSatellitesFiltersByName(string category, int page, int pageSize = 25)
+        {
+            if (string.IsNullOrWhiteSpace(category)) return BadRequest("Категория спутников не может быть пустой");
+
+            var satellitesList = await _satelliteGetService.GetSatellitesFiltersByName(category, page, pageSize);
+            if (satellitesList == null || satellitesList.Count <= 0) return NotFound($"Данных о категории {category} не существует");
+
+            return Ok(satellitesList);
         }
     }
 }

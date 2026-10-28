@@ -8,7 +8,7 @@
 
           <p class="modeling-subtitle" style="margin: 0;">
             Current device:
-            <span class="accent-text name-accent" v-if="satelliteData">{{ satelliteData.name }}</span>
+            <span class="accent-text name-accent" v-if="displayName">{{ displayName }}</span>
             <span class="accent-text" v-else>Defining the object...</span>
             | NORAD ID: <span class="accent-id">{{ noradId }}</span>
           </p>
@@ -128,6 +128,14 @@
 
   const noradId = ref<number>(0)
   const satelliteData = ref<SGP4DataDTO | null>(null)
+
+  // Имя спутника из обычного GET-запроса (GetDataById).
+  // Приходит сразу при загрузке страницы, не зависит от WebSocket и не пропадает при его обрыве
+  const satelliteName = ref<string | null>(null)
+
+  // Итоговое имя для отображения: сначала из сокета (если уже пришло), иначе из GET-запроса
+  const displayName = computed(() => satelliteData.value?.name ?? satelliteName.value)
+
   const syncStatus = ref<'pending' | 'success' | 'reconnecting' | 'error' | 'db_error'>('pending')
   const connectionStatus = ref<'connecting' | 'connected' | 'disconnected'>('connecting')
   const statusText = ref('Establishing a connection...')
@@ -166,6 +174,31 @@
 
   const handleBrowserOffline = () => {
     isOnline.value = false
+  }
+
+  // Ответ GetDataById: список SatellitesFilterDTO (поля noradId и name)
+  interface SatelliteFilterDTO {
+    noradId: number
+    name: string
+  }
+
+  // Загружаем имя спутника обычным GET-запросом по ID из URL.
+  // Эндпоинт возвращает список (ищет ID, в который входит число), поэтому берём точное совпадение.
+  const loadSatelliteInfo = async (id: number) => {
+    try {
+      const response = await fetch(`/api/v1/GetDataById?noradId=${id}`)
+      if (!response.ok) return
+
+      const list: SatelliteFilterDTO[] = await response.json()
+      const sat = list.find((s) => s.noradId === id)
+
+      // Если пользователь уже перешёл на другого спутника, устаревший ответ игнорируем
+      if (sat && noradId.value === id) {
+        satelliteName.value = sat.name
+      }
+    } catch (err) {
+      console.warn('[ЦУП] Не удалось получить имя спутника:', err)
+    }
   }
 
   const initLeafletMap = () => {
@@ -330,6 +363,12 @@
     initLeafletMap()
 
     noradId.value = id
+
+    // Сбрасываем имя предыдущего спутника и сразу грузим имя нового обычным GET-запросом.
+    // Без await — чтобы не задерживать подключение WebSocket
+    satelliteName.value = null
+    loadSatelliteInfo(id)
+
     connectionStatus.value = 'connecting'
     syncStatus.value = 'pending'
     statusText.value = 'Connection...'
@@ -410,8 +449,9 @@
     { immediate: true }
   )
 
+  // Обновляем title и description по displayName: имя приходит из GET-запроса,
   watch(
-    () => satelliteData.value?.name,
+    displayName,
     (newName) => {
       if (newName) {
         // 1. Динамически меняем заголовок вкладки браузера
