@@ -6,12 +6,12 @@
       <div class="modeling-header-block">
         <div class="header-block-flex-wrapper">
 
-          <p class="modeling-subtitle" style="margin: 0;">
+          <h1 class="modeling-subtitle" style="margin: 0;">
             Current device:
             <span class="accent-text name-accent" v-if="displayName">{{ displayName }}</span>
             <span class="accent-text" v-else>Defining the object...</span>
             | NORAD ID: <span class="accent-id">{{ noradId }}</span>
-          </p>
+          </h1>
 
           <!-- ИНДИКАТОР ПОДКЛЮЧЕНИЙ -->
           <div class="sync-status-badge" :class="(syncStatus === 'error' || syncStatus === 'db_error') ? 'badge-error' : `badge-${syncStatus}`">

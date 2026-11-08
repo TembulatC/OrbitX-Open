@@ -34,7 +34,7 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
             if (!_cache.TryGetValue(cacheKey, out List<int>? satellitesIdsList))
             {
                 satellitesIdsList = await _dbContext.Satellites
-                    .Where(s => s.Category == category)
+                    .Where(s => s.Categories.Contains(category))
                     .OrderBy(s => s.NORAD_CAT_ID)
                     .Select(s => s.NORAD_CAT_ID)
                     .ToListAsync();
@@ -87,7 +87,7 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
             if (!_cache.TryGetValue(cacheKey, out List<int>? satellitesIdsList))
             {
                 satellitesIdsList = await _dbContext.Satellites
-                    .Where(s => s.Category == category)
+                    .Where(s => s.Categories.Contains(category))
                     .OrderBy(s => s.OBJECT_NAME)
                     .Select(s => s.NORAD_CAT_ID)
                     .ToListAsync();

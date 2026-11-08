@@ -30,7 +30,7 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
             // Берем ID только тех спутников, которые пришли в этой конкретной категории
             var incomingIds = omm.Select(t => t.NORAD_CAT_ID).ToList();
 
-            // Тянем из базы только те спутники, которые мы хотим обновить
+            // Тянем из базы ТОЛЬКО те спутники, которые мы хотим обновить
             var existingSatellites = await _dbContext.Satellites
                 .Where(s => incomingIds.Contains(s.NORAD_CAT_ID))
                 .ToDictionaryAsync(s => s.NORAD_CAT_ID); // Переводим в Dictionary для быстрого поиска
@@ -58,15 +58,18 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
                     existing.MEAN_MOTION_DDOT = satelliteOmm.MEAN_MOTION_DDOT;
                     existing.EPOCH = satelliteOmm.EPOCH;
                     existing.UpdatedAt = satelliteOmm.UpdatedAt;
-                    existing.Category = satellitesCategory.ToLower();
+
+                    if (!existing.Categories.Contains(satellitesCategory.ToLower()))
+                        existing.Categories.Add(satellitesCategory.ToLower());
                 }
                 else
                 {
+                    satelliteOmm.Categories[0] = satellitesCategory.ToLower();
                     _dbContext.Satellites.Add(satelliteOmm);
                 }
             }
 
-            // Сохраняем всё одним батчем
+            // Сохраняем всё одним мощным батчем
             await _dbContext.SaveChangesAsync();
             LogUpdateData();
         }
@@ -112,15 +115,18 @@ namespace Core.Modules.SatelliteData.Infrastructure.Repositories
                     existing.MEAN_MOTION_DDOT = satelliteOmm.MEAN_MOTION_DDOT;
                     existing.EPOCH = satelliteOmm.EPOCH;
                     existing.UpdatedAt = satelliteOmm.UpdatedAt;
-                    existing.Category = satellitesCategory.ToLower();
+
+                    if (!existing.Categories.Contains(satellitesCategory.ToLower()))
+                        existing.Categories.Add(satellitesCategory.ToLower());
                 }
                 else
                 {
+                    satelliteOmm.Categories[0] = satellitesCategory.ToLower();
                     _dbContext.Satellites.Add(satelliteOmm);
                 }
             }
 
-            // Сохраняем всё одним батчем
+            // Сохраняем всё одним мощным батчем
             await _dbContext.SaveChangesAsync(cancellationToken);
             LogUpdateDataCts();
         }

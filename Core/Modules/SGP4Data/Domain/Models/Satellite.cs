@@ -11,7 +11,7 @@ namespace Core.Modules.SGP4Data.Domain.Models
         public Satellite() { }
 
         public Satellite(int NORAD_CAT_ID, string OBJECT_NAME, string OBJECT_ID, double MEAN_MOTION, double ECCENTRICITY, double INCLINATION, double RA_OF_ASC_NODE, double ARG_OF_PERICENTER,
-            double MEAN_ANOMALY, int EPHEMERIS_TYPE, string CLASSIFICATION_TYPE, int ELEMENT_SET_NO, int REV_AT_EPOCH, double BSTAR, double MEAN_MOTION_DOT, int MEAN_MOTION_DDOT, string category, DateTime EPOCH, DateTime updatedAt)
+            double MEAN_ANOMALY, int EPHEMERIS_TYPE, string CLASSIFICATION_TYPE, int ELEMENT_SET_NO, int REV_AT_EPOCH, double BSTAR, double MEAN_MOTION_DOT, int MEAN_MOTION_DDOT, List<string> categories, DateTime EPOCH, DateTime updatedAt)
         {
             this.NORAD_CAT_ID = NORAD_CAT_ID;
             this.OBJECT_NAME = OBJECT_NAME;
@@ -29,7 +29,7 @@ namespace Core.Modules.SGP4Data.Domain.Models
             this.BSTAR = BSTAR;
             this.MEAN_MOTION_DOT = MEAN_MOTION_DOT;
             this.MEAN_MOTION_DDOT = MEAN_MOTION_DDOT;
-            Category = category;
+            Categories = categories;
             this.EPOCH = EPOCH;
             UpdatedAt = updatedAt;
         }
@@ -82,8 +82,8 @@ namespace Core.Modules.SGP4Data.Domain.Models
         // Вторая производная среднего движения
         public double MEAN_MOTION_DDOT { get; set; } = 0;
 
-        // Категория спутника
-        public string Category { get; set; } = string.Empty;
+        // Категории спутника
+        public List<string> Categories { get; set; } = [];
 
         // Время, когда данные были актуальны (Epoch)
         public DateTime EPOCH { get; set; }

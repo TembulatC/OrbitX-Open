@@ -217,7 +217,7 @@ namespace Core.Modules.SatelliteData.Application.Services
                     Satellite satellite = new Satellite
                     {
                         NORAD_CAT_ID = noradId,
-                        Category = satellitesCategory,
+                        Categories = new List<string> { satellitesCategory },
                         EPOCH = epochFormatting,
                         UpdatedAt = DateTime.UtcNow,
 
@@ -250,7 +250,7 @@ namespace Core.Modules.SatelliteData.Application.Services
                 catch
                 {
                     continue;
-                }               
+                }
             }
 
             LogParserFormatting();

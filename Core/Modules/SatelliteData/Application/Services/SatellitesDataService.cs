@@ -25,23 +25,23 @@ namespace Core.Modules.SatelliteData.Application.Services
         {
             LogLaunch();
 
-            string httpTLEstring = await _httpData.GetSatelliteData(satellitesCategory);
+            string httpOMMstring = await _httpData.GetSatelliteData(satellitesCategory);
 
-            if (string.IsNullOrEmpty(httpTLEstring))
+            if (string.IsNullOrEmpty(httpOMMstring))
             {
                 LogCancellationParser();
                 return;
             }
 
-            List<Satellite> tle = _satellitesParserService.Parse(httpTLEstring, satellitesCategory);
+            List<Satellite> omm = _satellitesParserService.Parse(httpOMMstring, satellitesCategory);
 
-            if (tle.Count == 0)
+            if (omm.Count == 0)
             {
                 LogCancellationDB();
                 return;
             }
 
-            await _SatelliteData.AddSatelliteData(tle, satellitesCategory);
+            await _SatelliteData.AddSatelliteData(omm, satellitesCategory);
 
             LogEnding();
         }

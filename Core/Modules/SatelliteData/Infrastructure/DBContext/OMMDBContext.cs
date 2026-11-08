@@ -14,8 +14,8 @@ namespace Core.Modules.SatelliteData.Infrastructure.DBContext
             // Указываем NoradId как первичный ключ
             modelBuilder.Entity<Satellite>().HasKey(s => s.NORAD_CAT_ID);
 
-            // Индекс для быстрого поиска по категориям
-            modelBuilder.Entity<Satellite>().HasIndex(s => s.Category);
+            // Индекс для быстрого поиска по категориям (SpaceX, Couper и т.д.)
+            modelBuilder.Entity<Satellite>().HasIndex(s => s.Categories).HasMethod("gin");
 
             base.OnModelCreating(modelBuilder);
         }
