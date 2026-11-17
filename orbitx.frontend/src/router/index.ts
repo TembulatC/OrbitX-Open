@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import SatelliteCatalogModelingView from '../views/satellites/SatelliteCatalogModelingView.vue'
+import SatelliteCatalogModelingView from '../views/satellites/catalog/SatelliteCatalogModelingView.vue'
 import PrivacyView from '../views/PrivacyView.vue'
 import TermsView from '../views/TermsView.vue'
 
@@ -18,7 +18,7 @@ const routes = [
   {
     path: '/satellites-modeling/:satellite_id',
     name: 'satellites-modeling',
-    component: () => import('../views/satellites/SatelliteModelingView.vue')
+    component: () => import('../views/satellites/modeling/SatelliteModelingView.vue')
   },
   {
     path: '/privacy',

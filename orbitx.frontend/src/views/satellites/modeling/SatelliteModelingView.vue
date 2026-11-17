@@ -3,40 +3,7 @@
     <div class="container">
 
       <!-- ВЕРХНИЙ БЛОК: ИНФОРМАЦИЯ О ТЕКУЩЕМ СПУТНИКЕ -->
-      <div class="modeling-header-block">
-        <div class="header-block-flex-wrapper">
-
-          <h1 class="modeling-subtitle" style="margin: 0;">
-            Current device:
-            <span class="accent-text name-accent" v-if="displayName">{{ displayName }}</span>
-            <span class="accent-text" v-else>Defining the object...</span>
-            | NORAD ID: <span class="accent-id">{{ noradId }}</span>
-          </h1>
-
-          <!-- ИНДИКАТОР ПОДКЛЮЧЕНИЙ -->
-          <div class="sync-status-badge" :class="(syncStatus === 'error' || syncStatus === 'db_error') ? 'badge-error' : `badge-${syncStatus}`">
-            <span class="status-dot" :class="(syncStatus === 'error' || syncStatus === 'db_error') ? 'dot-error' : `dot-${syncStatus}`"></span>
-            <p class="status-badge-text">
-              <template v-if="syncStatus === 'pending'">
-                Connecting...
-              </template>
-              <template v-else-if="syncStatus === 'success'">
-                Tracking is enabled
-              </template>
-              <template v-else-if="syncStatus === 'reconnecting'">
-                Connection lost. Please restart tracking
-              </template>
-              <template v-else-if="syncStatus === 'error'">
-                Connection error. The server is temporarily unavailable.
-              </template>
-              <template v-else-if="syncStatus === 'db_error'">
-                Connection error. The server is temporarily unavailable.
-              </template>
-            </p>
-          </div>
-
-        </div>
-      </div>
+      <SatelliteStatusBar :display-name="displayName" :norad-id="noradId" :sync-status="syncStatus" />
 
       <!-- КАРТА + ТЕЛЕМЕТРИЯ ПОД НЕЙ -->
       <div class="modeling-layout">
@@ -118,99 +85,22 @@
 
         <!-- ДОПОЛНИТЕЛЬНЫЕ СПУТНИКИ -->
         <div class="extra-bars">
-          <div class="telemetry-bar" v-for="s in extraSats" :key="s.noradId">
-            <div class="sat-name-row extra-name-row">
-              <span class="sat-name" :style="{ color: s.color }" :title="s.name">{{ s.name }}</span>
-              <button type="button" class="extra-remove" title="Remove satellite" @click="removeExtraSat(s.noradId)">×</button>
-            </div>
-
-            <div class="telemetry-card">
-              <span class="telemetry-label">NORAD ID</span>
-              <span class="telemetry-value norad-row">
-                {{ s.noradId }}
-                <span class="marker-dot" :style="{ '--sat-color': s.color }"><span class="marker-dot-wave colored"></span><span class="marker-dot-core colored"></span></span>
-              </span>
-            </div>
-
-            <div class="telemetry-card">
-              <span class="telemetry-label">Latitude</span>
-              <span class="telemetry-value" v-if="s.data">{{ s.data.latitude?.toFixed(6) }}°</span>
-              <span class="telemetry-value loading-value" v-else>--.------</span>
-            </div>
-
-            <div class="telemetry-card">
-              <span class="telemetry-label">Longitude</span>
-              <span class="telemetry-value" v-if="s.data">{{ s.data.longitude?.toFixed(6) }}°</span>
-              <span class="telemetry-value loading-value" v-else>--.------</span>
-            </div>
-
-            <div class="telemetry-card">
-              <span class="telemetry-label">Altitude</span>
-              <span class="telemetry-value" :style="{ color: s.color }" v-if="s.data">{{ s.data.altitude?.toFixed(2) }} km</span>
-              <span class="telemetry-value loading-value" v-else>---.--</span>
-            </div>
-
-            <div class="telemetry-card">
-              <span class="telemetry-label">Marker</span>
-              <span class="telemetry-value marker-value">
-                <span class="frequency-indicator"
-                      :class="s.status === 'success' ? 'indicator-success' : 'indicator-error blink-dot'"></span>
-                {{ s.status === 'success' ? '~1 / sec' : '~0 / sec' }}
-              </span>
-            </div>
-          </div>
+          <SatelliteTelemetryBar v-for="s in extraSats"
+                                 :key="s.noradId"
+                                 :name="s.name"
+                                 :norad-id="s.noradId"
+                                 :data="s.data"
+                                 :color="s.color"
+                                 :is-live="s.status === 'success'"
+                                 removable
+                                 @remove="removeExtraSat(s.noradId)" />
         </div>
 
-        <!-- ГОРИЗОНТАЛЬНАЯ ПОЛОСА ТЕЛЕМЕТРИИ -->
-        <div class="telemetry-bar">
-
-          <!-- НАЗВАНИЕ СПУТНИКА: внутри полосы, над карточкой NORAD ID -->
-          <div class="sat-name-row">
-            <span class="sat-name" :title="displayName || ''">{{ displayName || 'Defining the object...' }}</span>
-          </div>
-
-          <!-- NORAD ID -->
-          <div class="telemetry-card">
-
-            <span class="telemetry-label">NORAD ID</span>
-            <span class="telemetry-value norad-row">
-              {{ noradId || '-----' }}
-              <span class="marker-dot"><span class="marker-dot-wave"></span><span class="marker-dot-core"></span></span>
-            </span>
-          </div>
-
-          <!-- Широта -->
-          <div class="telemetry-card">
-            <span class="telemetry-label">Latitude</span>
-            <span class="telemetry-value" v-if="satelliteData">{{ satelliteData.latitude?.toFixed(6) }}°</span>
-            <span class="telemetry-value loading-value" v-else>--.------</span>
-          </div>
-
-          <!-- Долгота -->
-          <div class="telemetry-card">
-            <span class="telemetry-label">Longitude</span>
-            <span class="telemetry-value" v-if="satelliteData">{{ satelliteData.longitude?.toFixed(6) }}°</span>
-            <span class="telemetry-value loading-value" v-else>--.------</span>
-          </div>
-
-          <!-- Высота -->
-          <div class="telemetry-card">
-            <span class="telemetry-label">Altitude</span>
-            <span class="telemetry-value value-alt" v-if="satelliteData">{{ satelliteData.altitude?.toFixed(2) }} km</span>
-            <span class="telemetry-value loading-value" v-else>---.--</span>
-          </div>
-
-          <!-- Частота обновления -->
-          <div class="telemetry-card">
-            <span class="telemetry-label">Marker</span>
-            <span class="telemetry-value marker-value">
-              <span class="frequency-indicator"
-                    :class="syncStatus === 'success' ? 'indicator-success' : 'indicator-error blink-dot'"></span>
-              {{ syncStatus === 'success' ? '~1 / sec' : '~0 / sec' }}
-            </span>
-          </div>
-
-        </div>
+        <!-- ПОЛОСА ТЕЛЕМЕТРИИ ОСНОВНОГО СПУТНИКА -->
+        <SatelliteTelemetryBar :name="displayName"
+                               :norad-id="noradId"
+                               :data="satelliteData"
+                               :is-live="syncStatus === 'success'" />
 
       </div>
 
@@ -225,13 +115,11 @@
   import * as signalR from '@microsoft/signalr'
   import L from 'leaflet'
 
-  interface SGP4DataDTO {
-    noradId: number
-    name: string
-    longitude: number
-    latitude: number
-    altitude: number
-  }
+  import SatelliteStatusBar from './SatelliteStatusBar.vue'
+  import SatelliteTelemetryBar from './SatelliteTelemetryBar.vue'
+  import type { SGP4DataDTO, SatelliteFilterDTO, SyncStatus, ExtraSat } from '../../../types/satellite'
+  import { MAIN_SAT_COLOR, pickDistinctColor } from '../../../utils/satelliteColors'
+  import '../../../assets/satellite-map.css'
 
   const route = useRoute()
 
@@ -245,7 +133,7 @@
   // Итоговое имя для отображения: сначала из сокета (если уже пришло), иначе из GET-запроса
   const displayName = computed(() => satelliteData.value?.name ?? satelliteName.value)
 
-  const syncStatus = ref<'pending' | 'success' | 'reconnecting' | 'error' | 'db_error'>('pending')
+  const syncStatus = ref<SyncStatus>('pending')
   const connectionStatus = ref<'connecting' | 'connected' | 'disconnected'>('connecting')
   const statusText = ref('Establishing a connection...')
 
@@ -283,12 +171,6 @@
 
   const handleBrowserOffline = () => {
     isOnline.value = false
-  }
-
-  // Ответ GetDataById: список SatellitesFilterDTO (поля noradId и name)
-  interface SatelliteFilterDTO {
-    noradId: number
-    name: string
   }
 
   // Загружаем имя спутника обычным GET-запросом по ID из URL.
@@ -592,14 +474,6 @@
   }
 
   // ДОПОЛНИТЕЛЬНЫЕ СПУТНИКИ
-  interface ExtraSat {
-    noradId: number
-    name: string
-    color: string
-    data: SGP4DataDTO | null
-    status: 'pending' | 'success' | 'error'
-  }
-
   interface ExtraRuntime {
     hub: signalR.HubConnection | null
     marker: L.Marker | null
@@ -692,8 +566,6 @@
   const showDetails = ref(false)  // чекбокс 2: добавить координаты и высоту (доступен после первого)
   const hoverOnly = ref(false)    // чекбокс 3: только при наведении (доступен после первого)
 
-  const MAIN_SAT_COLOR = '#ea75a2'
-
   // Данные для подписи берутся из того же состояния, что и таблицы под картой
   // (satelliteData / extraSats[].data), то есть приходят по уже открытому соединению.
   // Новых подписок и запросов нет, а цифры в подписи всегда совпадают с таблицей.
@@ -763,42 +635,6 @@
 
   watch([showNames, showDetails, hoverOnly, displayName], refreshAllLabels)
 
-  // Оттенок основного спутника (#ea75a2 ≈ hue 338) — новые цвета не должны быть на него похожи
-  const MAIN_SAT_HUE = 338
-
-  // Кратчайшее расстояние между двумя оттенками на цветовом круге (0–180°)
-  const hueDistance = (a: number, b: number): number => {
-    const d = Math.abs(a - b) % 360
-    return d > 180 ? 360 - d : d
-  }
-
-  const hueOf = (color: string): number => {
-    const m = /hsl\(\s*(\d+(?:\.\d+)?)/.exec(color)
-    return m && m[1] !== undefined ? parseFloat(m[1]) : MAIN_SAT_HUE
-  }
-
-  // Яркий цвет, максимально далёкий по оттенку от уже занятых (включая основной спутник).
-  // Из всех кандидатов берётся тот, у которого расстояние до ближайшего занятого оттенка максимально.
-  // Освободившиеся при удалении спутника оттенки автоматически становятся доступны снова.
-  const randomColor = (): string => {
-    const usedHues = [MAIN_SAT_HUE, ...extraSats.value.map((s) => hueOf(s.color))]
-
-    let bestHue = 0
-    let bestDist = -1
-    for (let h = 0; h < 360; h += 2) {
-      const d = Math.min(...usedHues.map((u) => hueDistance(h, u)))
-      // Небольшой случайный разброс, чтобы при равных расстояниях цвета не повторялись по шаблону
-      if (d + Math.random() * 0.5 > bestDist) {
-        bestDist = d
-        bestHue = h
-      }
-    }
-
-    const sat = 75 + Math.floor(Math.random() * 26) // 75–100%
-    const lig = 52 + Math.floor(Math.random() * 14) // 52–65%
-    return `hsl(${bestHue}, ${sat}%, ${lig}%)`
-  }
-
   const applyExtraOnMap = (rt: ExtraRuntime, color: string, lat: number, lng: number) => {
     if (!map) return
     const pos = L.latLng(lat, lng)
@@ -833,7 +669,7 @@
     if (limitReached.value) return
 
     const id = r.noradId
-    const color = randomColor()
+    const color = pickDistinctColor(extraSats.value.map((s) => s.color))
     extraSats.value.push({ noradId: id, name: r.name, color, data: null, status: 'pending' })
     showAdd.value = false
     addQuery.value = ''
@@ -995,123 +831,6 @@
     padding: 40px 0;
   }
 
-  .modeling-header-block {
-    background-color: #141414;
-    border: 1px solid #222222;
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 30px;
-  }
-
-  .header-block-flex-wrapper {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-  }
-
-  .modeling-subtitle {
-    color: #94a3b8;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .accent-text {
-    color: #ffffff;
-    text-transform: none;
-  }
-
-  .name-accent {
-    color: #ea75a2;
-  }
-
-  .accent-id {
-    color: #ea75a2;
-    font-family: monospace;
-    font-size: 20px;
-    font-weight: 700;
-    background-color: rgba(234, 117, 162, 0.05);
-    padding: 2px 8px;
-    border-radius: 4px;
-    border: 1px solid rgba(234, 117, 162, 0.15);
-  }
-
-  .sync-status-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
-    border-radius: 20px;
-    min-height: 32px;
-    transition: all 0.3s ease;
-  }
-
-  .badge-pending {
-    background-color: rgba(148, 163, 184, 0.02);
-    border: 1px solid rgba(148, 163, 184, 0.12);
-  }
-
-    .badge-pending .status-badge-text {
-      color: #94a3b8;
-    }
-
-  .badge-success {
-    background-color: rgba(34, 197, 94, 0.03);
-    border: 1px solid rgba(34, 197, 94, 0.15);
-  }
-
-    .badge-success .status-badge-text {
-      color: #22c55e;
-    }
-
-  .badge-reconnecting {
-    background-color: rgba(234, 179, 8, 0.03);
-    border: 1px solid rgba(234, 179, 8, 0.15);
-  }
-
-    .badge-reconnecting .status-badge-text {
-      color: #eab308;
-    }
-
-  .badge-error {
-    background-color: rgba(239, 68, 68, 0.03);
-    border: 1px solid rgba(239, 68, 68, 0.15);
-  }
-
-    .badge-error .status-badge-text {
-      color: #ef4444;
-    }
-
-  .status-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-  }
-
-  .dot-pending {
-    background-color: #94a3b8;
-  }
-
-  .dot-success {
-    background-color: #22c55e;
-  }
-
-  .dot-reconnecting {
-    background-color: #eab308;
-  }
-
-  .dot-error {
-    background-color: #ef4444;
-  }
-
-  .status-badge-text {
-    font-size: 13px;
-    font-weight: 600;
-    margin: 0;
-    white-space: nowrap;
-  }
-
   /* ОСНОВНОЙ LAYOUT */
   .modeling-layout {
     display: flex;
@@ -1182,138 +901,12 @@
     }
   }
 
-  .telemetry-bar {
-    display: grid;
-    grid-template-columns: 0.8fr 1.2fr 1.2fr 1fr 1fr;
-    gap: 12px;
-    background-color: #141414;
-    border: 1px solid #222222;
-    border-radius: 16px;
-    padding: 14px;
-  }
-
-  .telemetry-card {
-    background-color: #1e1e1e;
-    border: 1px solid #2d2d2d;
-    border-radius: 12px;
-    padding: 12px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-  }
-
-  .telemetry-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-
-  .telemetry-value {
-    color: #ffffff;
-    font-size: clamp(14px, 1.5vw, 22px);
-    font-weight: 700;
-    font-family: monospace;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .sat-name-row {
-    grid-column: 1 / -1;
-    padding: 0 4px;
-    min-width: 0;
-  }
-
-  .sat-name {
-    display: block;
-    color: #ea75a2;
-    font-size: 16px;
-    font-weight: 700;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .norad-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
-
-  /* Точка-копия маркера на карте: показывает, какой точке принадлежит спутник */
-  .marker-dot {
-    position: relative;
-    width: 18px;
-    height: 18px;
-    flex-shrink: 0;
-  }
-
-  .marker-dot-core {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background-color: #ea75a2;
-    box-shadow: 0 0 8px #ea75a2;
-    transform: translate(-50%, -50%);
-  }
-
-  .marker-dot-wave {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 18px;
-    height: 18px;
-    border: 2px solid #ea75a2;
-    border-radius: 50%;
-    transform: translate(-50%, -50%) scale(0.75);
-    opacity: 0.35;
-  }
-
-
-  .marker-dot-core.colored {
-    background-color: var(--sat-color);
-    box-shadow: 0 0 8px var(--sat-color);
-  }
-
-  .marker-dot-wave.colored {
-    border-color: var(--sat-color);
-  }
-
   .extra-bars {
     order: 1;
     display: flex;
     flex-direction: column;
     gap: 16px;
   }
-
-  .extra-name-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .extra-remove {
-    background: none;
-    border: none;
-    color: #64748b;
-    font-size: 20px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 4px 8px;
-    touch-action: manipulation;
-    transition: color 0.2s ease;
-  }
-
-    .extra-remove:hover {
-      color: #ffffff;
-    }
 
   /* Панель между картой и блоками спутников */
   .map-toolbar {
@@ -1626,72 +1219,7 @@
     white-space: nowrap;
   }
 
-  .marker-value {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .value-alt {
-    color: #ea75a2;
-  }
-
-  .loading-value {
-    color: #3a3a3a;
-  }
-
-  .frequency-indicator {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    transition: background-color 0.3s ease;
-  }
-
-  .indicator-success {
-    background-color: #22c55e;
-  }
-
-  .indicator-error {
-    background-color: #ef4444;
-  }
-
-
-  /* ПЛАНШЕТ: 3 + 2 ячейки */
-  @media (max-width: 992px) {
-    .header-block-flex-wrapper {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 12px;
-    }
-
-    .sync-status-badge {
-      max-width: 100%;
-    }
-
-    .status-badge-text {
-      white-space: normal;
-    }
-
-    .telemetry-bar {
-      grid-template-columns: repeat(6, 1fr);
-    }
-
-    .sat-name-row {
-      grid-column: 1 / -1;
-    }
-
-    .telemetry-card {
-      grid-column: span 2;
-    }
-
-      .telemetry-card:nth-child(5),
-      .telemetry-card:nth-child(6) {
-        grid-column: span 3;
-      }
-  }
-
-  /* ТЕЛЕФОН: 2 колонки */
+  /* ТЕЛЕФОН */
   @media (max-width: 560px) {
     .map-toolbar {
       flex-direction: column;
@@ -1710,175 +1238,9 @@
       padding: 16px 0;
     }
 
-    .modeling-header-block {
-      padding: 14px;
-      margin-bottom: 16px;
-    }
-
-    .modeling-subtitle {
-      font-size: 14px;
-    }
-
-    .accent-id {
-      font-size: 16px;
-    }
-
     .map-container-box {
       height: clamp(260px, 55dvh, 460px);
       border-radius: 12px;
     }
-
-    .telemetry-bar {
-      grid-template-columns: 1fr 1fr;
-      padding: 10px;
-      gap: 8px;
-    }
-
-    .telemetry-card,
-    .telemetry-card:nth-child(5),
-    .telemetry-card:nth-child(6) {
-      grid-column: auto;
-      padding: 10px 12px;
-    }
-
-      /* NORAD ID на всю ширину */
-      .telemetry-card:nth-child(2) {
-        grid-column: 1 / -1;
-      }
-
-    .telemetry-value {
-      font-size: 15px;
-    }
-  }
-</style>
-
-<!-- Отдельный неизолированный тег для стилизации элементов Leaflet -->
-<style>
-  @import "leaflet/dist/leaflet.css";
-
-  /* Базовый цвет подложки — черный */
-  .leaflet-container {
-    background-color: #000000 !important;
-  }
-
-  /* Один фильтр на весь слой тайлов вместо отдельного фильтра на каждой плитке — заметно дешевле */
-  .leaflet-tile-pane {
-    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) saturate(30%);
-  }
-
-  /* Сокрытие строки копирайта */
-  .leaflet-control-attribution {
-    display: none !important;
-  }
-
-  /* Тёмные кнопки зума */
-  .leaflet-control-zoom a {
-    color: #ffffff !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    text-decoration: none !important;
-    background-color: #141414 !important;
-    border: 1px solid #222222 !important;
-    border-bottom: none !important;
-    touch-action: manipulation; /* Быстрый отклик на тап без задержки под двойной тап-зум */
-  }
-
-    .leaflet-control-zoom a:last-child {
-      border-bottom: 1px solid #222222 !important;
-    }
-
-    .leaflet-control-zoom a:hover,
-    .leaflet-control-zoom a:active {
-      background-color: #1e1e1e !important;
-    }
-
-  /* На телефонах увеличиваем кнопки +/- зума */
-  @media (max-width: 768px) {
-    .leaflet-control-zoom a {
-      width: 40px !important;
-      height: 40px !important;
-      line-height: 40px !important;
-      font-size: 20px !important;
-    }
-  }
-
-  /* Цветной маркер дополнительного спутника */
-  .satellite-ping-core.colored {
-    background-color: var(--sat-color);
-    box-shadow: 0 0 10px var(--sat-color);
-  }
-
-  .satellite-ping-wave.colored {
-    border-color: var(--sat-color);
-  }
-
-  /* Подпись с названием спутника */
-  .sat-name-tooltip {
-    background-color: #141414;
-    border: 1px solid #2d2d2d;
-    border-radius: 6px;
-    padding: 2px 8px;
-    font-family: "Exo 2", sans-serif;
-    font-size: 12px;
-    font-weight: 700;
-    white-space: nowrap;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
-  }
-
-    .sat-name-tooltip::before {
-      display: none;
-    }
-
-  .sat-tip-name {
-    font-weight: 700;
-  }
-
-  .sat-tip-info {
-    margin-top: 2px;
-    color: #94a3b8;
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1.3;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .sat-tip-name + .sat-tip-info {
-    margin-top: 4px;
-  }
-
-  /* Маркер спутника */
-  .custom-satellite-icon {
-    background: transparent !important;
-    border: none !important;
-    position: absolute;
-  }
-
-  /* Сама точка: цвет как у линии траектории */
-  .satellite-ping-core {
-    width: 12px;
-    height: 12px;
-    background-color: #ea75a2;
-    border-radius: 50%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 5;
-    box-shadow: 0 0 10px #ea75a2;
-  }
-
-  /* Расходящаяся волна вокруг точки */
-  .satellite-ping-wave {
-    width: 30px;
-    height: 30px;
-    border: 2px solid #ea75a2;
-    border-radius: 50%;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.7);
-    opacity: 0.35;
-    pointer-events: none;
   }
 </style>

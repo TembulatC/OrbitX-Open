@@ -1,0 +1,121 @@
+/* Стили карты спутников: Leaflet, маркеры и подписи */
+@import "leaflet/dist/leaflet.css";
+
+.leaflet-container {
+  background-color: #000000 !important;
+}
+
+/* Один фильтр на весь слой тайлов */
+.leaflet-tile-pane {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) saturate(30%);
+}
+
+/* Сокрытие строки копирайта */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+.leaflet-control-zoom a {
+  color: #ffffff !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-decoration: none !important;
+  background-color: #141414 !important;
+  border: 1px solid #222222 !important;
+  border-bottom: none !important;
+  touch-action: manipulation;
+}
+
+  .leaflet-control-zoom a:last-child {
+    border-bottom: 1px solid #222222 !important;
+  }
+
+  .leaflet-control-zoom a:hover,
+  .leaflet-control-zoom a:active {
+    background-color: #1e1e1e !important;
+  }
+
+/* На телефонах увеличиваем кнопки +/- зума */
+@media (max-width: 768px) {
+  .leaflet-control-zoom a {
+    width: 40px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    font-size: 20px !important;
+  }
+}
+
+.satellite-ping-core.colored {
+  background-color: var(--sat-color);
+  box-shadow: 0 0 10px var(--sat-color);
+}
+
+.satellite-ping-wave.colored {
+  border-color: var(--sat-color);
+}
+
+.sat-name-tooltip {
+  background-color: #141414;
+  border: 1px solid #2d2d2d;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-family: "Exo 2", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+}
+
+  .sat-name-tooltip::before {
+    display: none;
+  }
+
+.sat-tip-name {
+  font-weight: 700;
+}
+
+.sat-tip-info {
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.sat-tip-name + .sat-tip-info {
+  margin-top: 4px;
+}
+
+.custom-satellite-icon {
+  background: transparent !important;
+  border: none !important;
+  position: absolute;
+}
+
+.satellite-ping-core {
+  width: 12px;
+  height: 12px;
+  background-color: #ea75a2;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  box-shadow: 0 0 10px #ea75a2;
+}
+
+.satellite-ping-wave {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #ea75a2;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.7);
+  opacity: 0.35;
+  pointer-events: none;
+}
