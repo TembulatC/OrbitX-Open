@@ -65,6 +65,10 @@
               <span>Show satellite names</span>
             </label>
             <label class="map-option" :class="{ 'map-option-disabled': !showNames }">
+              <input type="checkbox" v-model="showDetails" :disabled="!showNames" />
+              <span>Show detailed info</span>
+            </label>
+            <label class="map-option" :class="{ 'map-option-disabled': !showNames }">
               <input type="checkbox" v-model="hoverOnly" :disabled="!showNames" />
               <span>Show on hover only</span>
             </label>
@@ -88,16 +92,25 @@
               <div class="add-sat-list">
                 <div v-if="addLoading" class="add-sat-hint">Searching...</div>
                 <div v-else-if="addMessage" class="add-sat-hint">{{ addMessage }}</div>
-                <button v-for="r in addResults"
-                        :key="r.noradId"
-                        type="button"
-                        class="add-sat-item"
-                        :disabled="isAlreadyTracked(r.noradId)"
-                        @click="addSatellite(r)">
+                <label v-for="r in addResults"
+                       :key="r.noradId"
+                       class="add-sat-item"
+                       :class="{ 'add-sat-item-disabled': !canToggle(r.noradId) }">
+                  <input v-model="selectedIds"
+                         type="checkbox"
+                         class="add-sat-check"
+                         :value="r.noradId"
+                         :disabled="!canToggle(r.noradId)" />
                   <span class="add-sat-item-id">{{ r.noradId }}</span>
                   <span class="add-sat-item-name">{{ r.name }}</span>
-                </button>
+                </label>
               </div>
+              <button v-if="selectedIds.length > 0"
+                      type="button"
+                      class="add-sat-confirm-btn"
+                      @click="addSelectedSatellites">
+                Add ({{ selectedIds.length }})
+              </button>
             </div>
             <button type="button" class="add-sat-btn" :disabled="limitReached" :style="limitReached ? 'opacity:0.5;cursor:not-allowed' : ''" @click.stop="toggleAddMenu">+ Add Satellite ({{ extraSats.length }}/{{ MAX_EXTRA_SATS }})</button>
           </div>
@@ -380,14 +393,21 @@
     })
   }
 
-  // ── Пакетное обновление карты ──
-  // Позиции приходят по разным соединениям в разные моменты секунды. Чтобы все точки на карте
-  // показывали согласованный момент времени и карта не перерисовывалась десятки раз в секунду,
-  // обновления копятся в очереди и применяются разом. Ни одна точка не теряется: каждая
-  // полученная координата попадает и на маркер, и в траекторию, просто с задержкой до одного такта.
-  const MAP_FLUSH_INTERVAL_MS = 1000
+  // ── Режим обновления карты ──
+  // 0   — каждая пришедшая позиция применяется сразу (максимальная точность, выше нагрузка на ЦП);
+  // >0  — позиции копятся и применяются пакетом раз в N мс (меньше нагрузка, задержка до N мс).
+  // Пакетом одновременно обновляются таблица, точка, траектория и подпись.
+  const MAP_FLUSH_INTERVAL_MS: number = 0
   const pendingMapUpdates: Array<() => void> = []
   let mapFlushTimer: number | null = null
+
+  const scheduleMapUpdate = (apply: () => void) => {
+    if (MAP_FLUSH_INTERVAL_MS <= 0) {
+      apply()
+    } else {
+      pendingMapUpdates.push(apply)
+    }
+  }
 
   const flushMapUpdates = () => {
     if (pendingMapUpdates.length === 0) return
@@ -440,10 +460,16 @@
       map.setView(newPos, 3, { animate: true })
       isFirstPosition = false
     }
+
   }
 
-  const updateSatelliteOnMap = (lat: number, lng: number) => {
-    pendingMapUpdates.push(() => applySatelliteOnMap(lat, lng))
+  // Таблица, точка, траектория и подпись обновляются вместе, поэтому всегда показывают одно и то же
+  const updateSatelliteOnMap = (data: SGP4DataDTO) => {
+    scheduleMapUpdate(() => {
+      satelliteData.value = data
+      applySatelliteOnMap(data.latitude, data.longitude)
+      refreshLabelContent(satelliteMarker, displayName.value, MAIN_SAT_COLOR, data)
+    })
   }
 
   const clearDbTimeout = () => {
@@ -523,13 +549,12 @@
 
     hubConnection.on('ReceivePosition', (data: SGP4DataDTO) => {
       clearDbTimeout()
-      satelliteData.value = data
 
       if (syncStatus.value !== 'success') {
         syncStatus.value = 'success'
       }
 
-      updateSatelliteOnMap(data.latitude, data.longitude)
+      updateSatelliteOnMap(data)
       resetHeartbeatTimeout()
     })
 
@@ -600,6 +625,24 @@
   const isAlreadyTracked = (id: number) =>
     id === noradId.value || extraSats.value.some((s) => s.noradId === id)
 
+  // Выбор нескольких спутников чекбоксами
+  const selectedIds = ref<number[]>([])
+  const slotsLeft = computed(() => MAX_EXTRA_SATS - extraSats.value.length)
+
+  // Отметить можно только ещё не отслеживаемый спутник и не больше, чем осталось свободных мест
+  const canToggle = (id: number) =>
+    !isAlreadyTracked(id) && (selectedIds.value.includes(id) || selectedIds.value.length < slotsLeft.value)
+
+  // Отметки сбрасываются при новом поиске (кнопка Search / Enter) и при закрытии меню.
+  // Пока пользователь просто печатает в поле, отметки сохраняются.
+  watch(showAdd, (open) => { if (!open) selectedIds.value = [] })
+
+  const addSelectedSatellites = () => {
+    const chosen = addResults.value.filter((r) => selectedIds.value.includes(r.noradId))
+    selectedIds.value = []
+    chosen.forEach((r) => { void addSatellite(r) })
+  }
+
   const toggleAddMenu = () => {
     showAdd.value = !showAdd.value
   }
@@ -612,6 +655,7 @@
 
   const runAddSearch = async () => {
     const q = addQuery.value.trim()
+    selectedIds.value = []
     addResults.value = []
     addMessage.value = ''
     if (q === '') return
@@ -644,21 +688,49 @@
   // Подписи спутников на карте
   // Берём уже известное имя спутника (из списка/GET-запроса), дополнительных запросов в БД нет.
   // Подпись привязана к маркеру (Leaflet tooltip), поэтому сама следует за точкой.
-  const showNames = ref(false)   // чекбокс 1: показывать названия
-  const hoverOnly = ref(false)   // чекбокс 2: только при наведении (доступен после первого)
+  const showNames = ref(false)    // чекбокс 1: показывать названия
+  const showDetails = ref(false)  // чекбокс 2: добавить координаты и высоту (доступен после первого)
+  const hoverOnly = ref(false)    // чекбокс 3: только при наведении (доступен после первого)
 
   const MAIN_SAT_COLOR = '#ea75a2'
 
-  const applyLabel = (marker: L.Marker | null | undefined, name: string | null | undefined, color: string) => {
+  // Данные для подписи берутся из того же состояния, что и таблицы под картой
+  // (satelliteData / extraSats[].data), то есть приходят по уже открытому соединению.
+  // Новых подписок и запросов нет, а цифры в подписи всегда совпадают с таблицей.
+  type LabelData = { latitude: number; longitude: number; altitude: number }
+
+  // Содержимое подписи: название (+ координаты и высота, если включено "Show detailed info")
+  const buildLabel = (name: string, color: string, data?: LabelData | null): HTMLElement => {
+    const root = document.createElement('div')
+
+    const title = document.createElement('div')
+    title.className = 'sat-tip-name'
+    title.textContent = name
+    title.style.color = color
+    root.appendChild(title)
+
+    if (showDetails.value && data) {
+      const rows = [
+        `Lat: ${data.latitude.toFixed(6)}°`,
+        `Lon: ${data.longitude.toFixed(6)}°`,
+        `Alt: ${data.altitude.toFixed(2)} km`
+      ]
+      for (const text of rows) {
+        const row = document.createElement('div')
+        row.className = 'sat-tip-info'
+        row.textContent = text
+        root.appendChild(row)
+      }
+    }
+    return root
+  }
+
+  const applyLabel = (marker: L.Marker | null | undefined, name: string | null | undefined, color: string, data?: LabelData | null) => {
     if (!marker) return
     marker.unbindTooltip()
     if (!showNames.value || !name) return
 
-    const el = document.createElement('span')
-    el.textContent = name
-    el.style.color = color
-
-    marker.bindTooltip(el, {
+    marker.bindTooltip(buildLabel(name, color, data), {
       permanent: !hoverOnly.value,
       direction: 'right',
       offset: [14, 0],
@@ -667,20 +739,29 @@
     })
   }
 
+  // Обновить цифры в уже созданной подписи в момент прихода новых данных (как и таблицы)
+  const refreshLabelContent = (marker: L.Marker | null | undefined, name: string | null | undefined, color: string, data: LabelData) => {
+    if (!marker || !name || !showNames.value || !showDetails.value || !marker.getTooltip()) return
+    marker.setTooltipContent(buildLabel(name, color, data))
+  }
+
   const refreshAllLabels = () => {
-    applyLabel(satelliteMarker, displayName.value, MAIN_SAT_COLOR)
+    applyLabel(satelliteMarker, displayName.value, MAIN_SAT_COLOR, satelliteData.value)
     extraRuntime.forEach((rt, id) => {
       const it = extraSats.value.find((s) => s.noradId === id)
-      applyLabel(rt.marker, it?.name, it?.color ?? MAIN_SAT_COLOR)
+      applyLabel(rt.marker, it?.name, it?.color ?? MAIN_SAT_COLOR, it?.data)
     })
   }
 
-  // Если сняли "Show satellite names", режим "только при наведении" сбрасывается
+  // Если сняли "Show satellite names", дополнительные режимы сбрасываются
   watch(showNames, (v) => {
-    if (!v) hoverOnly.value = false
+    if (!v) {
+      hoverOnly.value = false
+      showDetails.value = false
+    }
   })
 
-  watch([showNames, hoverOnly, displayName], refreshAllLabels)
+  watch([showNames, showDetails, hoverOnly, displayName], refreshAllLabels)
 
   // Оттенок основного спутника (#ea75a2 ≈ hue 338) — новые цвета не должны быть на него похожи
   const MAIN_SAT_HUE = 338
@@ -744,13 +825,7 @@
     }
     rt.prevLng = lng
     rt.path?.addLatLng(pos)
-  }
 
-  const updateExtraOnMap = (rt: ExtraRuntime, color: string, lat: number, lng: number) => {
-    pendingMapUpdates.push(() => {
-      // Спутник мог быть удалён, пока обновление ждало в очереди
-      if (!rt.disposed) applyExtraOnMap(rt, color, lat, lng)
-    })
   }
 
   const addSatellite = async (r: SatelliteFilterDTO) => {
@@ -788,9 +863,18 @@
     hub.on('ReceivePosition', (data: SGP4DataDTO) => {
       const it = getItem()
       if (!it) return
-      it.data = data
       it.status = 'success'
-      updateExtraOnMap(rt, color, data.latitude, data.longitude)
+
+      // Таблица, точка, траектория и подпись обновляются вместе
+      scheduleMapUpdate(() => {
+        // Спутник мог быть удалён, пока обновление ждало в очереди
+        if (rt.disposed) return
+        const cur = getItem()
+        if (!cur) return
+        cur.data = data
+        applyExtraOnMap(rt, color, data.latitude, data.longitude)
+        refreshLabelContent(rt.marker, cur.name, color, data)
+      })
       resetBeat()
     })
 
@@ -884,7 +968,9 @@
 
   onMounted(() => {
     window.addEventListener('online', handleBrowserOnline)
-    mapFlushTimer = window.setInterval(flushMapUpdates, MAP_FLUSH_INTERVAL_MS)
+    if (MAP_FLUSH_INTERVAL_MS > 0) {
+      mapFlushTimer = window.setInterval(flushMapUpdates, MAP_FLUSH_INTERVAL_MS)
+    }
     document.addEventListener('click', handleDocumentClick)
     window.addEventListener('offline', handleBrowserOffline)
   })
@@ -1457,6 +1543,77 @@
       cursor: default;
     }
 
+    .add-sat-item:has(input:checked) {
+      border-color: #ea75a2;
+      background-color: #261a20;
+    }
+
+  .add-sat-item-disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  /* Тёмный чекбокс с розовым акцентом */
+  .add-sat-check {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    flex-shrink: 0;
+    background-color: #141414;
+    border: 2px solid #3a3a3a;
+    border-radius: 5px;
+    cursor: pointer;
+    display: grid;
+    place-content: center;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+
+    .add-sat-check::after {
+      content: "";
+      width: 8px;
+      height: 4px;
+      border-left: 2px solid #ffffff;
+      border-bottom: 2px solid #ffffff;
+      transform: rotate(-45deg) scale(0);
+      margin-top: -2px;
+      transition: transform 0.15s ease;
+    }
+
+    .add-sat-check:checked {
+      background-color: #ea75a2;
+      border-color: #ea75a2;
+    }
+
+      .add-sat-check:checked::after {
+        transform: rotate(-45deg) scale(1);
+      }
+
+    .add-sat-check:disabled {
+      cursor: default;
+    }
+
+  .add-sat-confirm-btn {
+    width: 100%;
+    height: 40px;
+    margin-top: 8px;
+    background-color: #ea75a2;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: "Exo 2", sans-serif;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+
+    .add-sat-confirm-btn:hover,
+    .add-sat-confirm-btn:active {
+      background-color: #f08db4;
+    }
+
   .add-sat-item-id {
     color: #94a3b8;
     min-width: 56px;
@@ -1672,6 +1829,23 @@
     .sat-name-tooltip::before {
       display: none;
     }
+
+  .sat-tip-name {
+    font-weight: 700;
+  }
+
+  .sat-tip-info {
+    margin-top: 2px;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.3;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sat-tip-name + .sat-tip-info {
+    margin-top: 4px;
+  }
 
   /* Маркер спутника */
   .custom-satellite-icon {

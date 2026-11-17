@@ -163,7 +163,7 @@
     gap: 16px;
   }
 
-  /* Индикатор статуса систем (зеленая мигающая точка) */
+  /* Индикатор статуса систем (зелёная точка, без анимации) */
   .status-indicator {
     display: flex;
     align-items: center;
@@ -180,7 +180,6 @@
     background-color: #22c55e;
     border-radius: 50%;
     box-shadow: 0 0 10px #22c55e;
-    animation: pulse-dot 2s infinite;
   }
 
   .status-text {
@@ -188,24 +187,6 @@
     font-weight: 500;
     color: #22c55e;
     margin-bottom: 2px;
-  }
-
-  @keyframes pulse-dot {
-    0% {
-      transform: scale(0.95);
-      opacity: 0.5;
-    }
-
-    50% {
-      transform: scale(1.1);
-      opacity: 1;
-      box-shadow: 0 0 14px #22c55e;
-    }
-
-    100% {
-      transform: scale(0.95);
-      opacity: 0.5;
-    }
   }
 
   /* Навигационные ссылки в подвале */
