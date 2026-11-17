@@ -68,7 +68,7 @@ export const createSatelliteHub = (url: string) => {
     return c
   }
 
-  // Открывает соединение, если оно ещё не открыто. Одновременные вызовы делят один запуск.
+  // Открывает соединение, если оно ещё не открыто. Одновременные вызовы делят один запуск
   const connect = async (): Promise<void> => {
     const c = ensureConnection()
     if (starting) return starting

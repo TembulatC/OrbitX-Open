@@ -24,7 +24,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
         {
             LogLaunchById(noradId);
 
-            if (noradId < 0)
+            if (noradId <= 0)
             {
                 LogNegativeNumber();
                 return null;
@@ -66,7 +66,7 @@ namespace Core.Modules.SGP4Data.Infrastructure.Repositories
                     _cache.Set(cacheKey, satelliteOMM, cacheOptions);
 
                     LogNotFoundById(noradId);
-                }           
+                }
             }
 
             return satelliteOMM;

@@ -8,6 +8,17 @@ namespace OrbitX.SignalRHubs
         private readonly ILogger<SignalRHub> _logger;
         private readonly SatelliteBackgroundWorker _worker;
 
+        private readonly static string[] CelestrakCategories = new[]
+        {
+            "weather", "resource", "sar", "sarsat", "dmc", "tdrss", "argos",
+            "planet", "spire", "geo", "gpz", "gpz-plus", "intelsat", "ses",
+            "eutelsat", "telesat", "starlink", "oneweb", "qianfan", "hulianwang",
+            "kuiper", "iridium-next", "orbcomm", "globalstar", "amateur",
+            "satnogs", "x-comm", "other-comm", "gnss", "gps-ops", "glo-ops",
+            "galileo", "beidou", "sbas", "science", "geodetic", "engineering",
+            "education", "military", "radar", "cubesat"
+        };
+
         public SignalRHub(ILogger<SignalRHub> logger, SatelliteBackgroundWorker worker)
         {
             _logger = logger;
@@ -32,6 +43,18 @@ namespace OrbitX.SignalRHubs
         // Этот метод автоматически вызовет TypeScript, когда пользователь зайдет на страницу /{id_satellite}
         public async Task WatchSatellite(int noradId, string satellitesCategory)
         {
+            if (noradId <= 0)
+            {
+                LogNegativeNoradId();
+                return;
+            }
+
+            if (!CelestrakCategories.Contains(satellitesCategory))
+            {
+                LogNotContainsCategory(satellitesCategory);
+                return;
+            }
+
             Dictionary<int, string> satellitesCategories = GetWatchingCategories();
             if (satellitesCategories.ContainsKey(noradId)) return; // Спутник уже есть в словаре, поток второй раз не пробуем запускать
 
@@ -55,6 +78,7 @@ namespace OrbitX.SignalRHubs
 
                 satellitesCategories.Remove(noradId);
             }
+            else LogNotFoundSatellite(noradId, satellitesCategory);
         }
 
         // Вызывается автоматически, когда вкладка закрыта или оборвался интернет
@@ -74,6 +98,7 @@ namespace OrbitX.SignalRHubs
                     satellitesCategories.Remove(noradId);
                 }
             }
+            else LogNotFoundSatellitePage();
 
             await base.OnDisconnectedAsync(exception);
         }

@@ -73,6 +73,18 @@
             Level = LogLevel.Information,
             Message = "Цикл обновления данных спутников окончен. Следующий через 2 часа")]
         private partial void LogEndСycle();
+
+        [LoggerMessage(
+            EventId = 3013,
+            Level = LogLevel.Warning,
+            Message = "Невозможно передать ID меньше 1")]
+        private partial void LogNegativeNoradId();
+
+        [LoggerMessage(
+            EventId = 3014,
+            Level = LogLevel.Warning,
+            Message = "Создание/подключение потока {SatellitesCategory} не удалось, данной категории не существует")]
+        private partial void LogNotContainsCategory(string satellitesCategory);
     }
 }
 

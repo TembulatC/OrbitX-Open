@@ -14,6 +14,17 @@ namespace OrbitX.BackgroundWorkers
         private readonly IHubContext<SignalRHub> _hubContext; // Связываем с SignalR      
         private readonly ILogger<SatelliteBackgroundWorker> _logger; // Логгер
 
+        private readonly static string[] CelestrakCategories = new[]
+        {
+            "weather", "resource", "sar", "sarsat", "dmc", "tdrss", "argos",
+            "planet", "spire", "geo", "gpz", "gpz-plus", "intelsat", "ses",
+            "eutelsat", "telesat", "starlink", "oneweb", "qianfan", "hulianwang",
+            "kuiper", "iridium-next", "orbcomm", "globalstar", "amateur",
+            "satnogs", "x-comm", "other-comm", "gnss", "gps-ops", "glo-ops",
+            "galileo", "beidou", "sbas", "science", "geodetic", "engineering",
+            "education", "military", "radar", "cubesat"
+        };
+
         private static readonly ConcurrentDictionary<string, (CancellationTokenSource cts, int counter, ConcurrentDictionary<int, int> _satelliteUsers)> _satellitesCategoryThreads = new(); // Адресная книга. Категория спутников -> Количество людей на категории в общем
 
         private CancellationToken _serverStoppingToken; // Ссылка на токен остановки всего сервера
@@ -29,6 +40,18 @@ namespace OrbitX.BackgroundWorkers
         // Метод вызывается из SignalR при первом подключении к спутнику
         public void OnSatelliteWatched(int noradId, string satellitesCategory)
         {
+            if (noradId <= 0)
+            {
+                LogNegativeNoradId();
+                return;
+            }
+
+            if (!CelestrakCategories.Contains(satellitesCategory))
+            {
+                LogNotContainsCategory(satellitesCategory);
+                return;
+            }
+
             while (true)
             {
                 // Связываем токен категории с токеном сервера
@@ -209,9 +232,9 @@ namespace OrbitX.BackgroundWorkers
                             // Получаем координаты на текущий такт
                             var data = await sgpService.GetSGPListByID(activeNoradIds);
 
-                            if (data != null)
+                            if (data != null && data.Count > 0)
                             {
-                                // Пуш в SignalR
+                                // Пуш в группу категории
                                 await _hubContext.Clients.Group($"SatellitesCategory:{satellitesCategory}").SendAsync("ReceivePosition", data, token);
                             }
                         }

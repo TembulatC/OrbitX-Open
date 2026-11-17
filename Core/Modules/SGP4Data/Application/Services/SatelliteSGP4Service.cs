@@ -186,7 +186,7 @@ namespace Core.Modules.SGP4Data.Application.Services
 
             foreach (int noradId in noradIds)
             {
-                if (noradId < 0) continue;
+                if (noradId <= 0) continue;
 
                 var satelliteData = await _satelliteSGPRepository.GetOMMByID(noradId);
                 if (satelliteData == null) continue;
