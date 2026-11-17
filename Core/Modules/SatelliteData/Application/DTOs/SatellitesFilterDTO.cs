@@ -11,5 +11,9 @@ namespace Core.Modules.SatelliteData.Application.DTOs
         // Название спутника
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
+
+        // Категория спутника
+        [JsonPropertyName("category")]
+        public string Category { get; set; } = string.Empty;
     }
 }

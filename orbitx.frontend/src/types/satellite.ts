@@ -11,6 +11,7 @@ export interface SGP4DataDTO {
 export interface SatelliteFilterDTO {
   noradId: number
   name: string
+  category: string
 }
 
 // Состояние подключения основного спутника
@@ -20,6 +21,7 @@ export type SyncStatus = 'pending' | 'success' | 'reconnecting' | 'error' | 'db_
 export interface ExtraSat {
   noradId: number
   name: string
+  category: string
   color: string
   data: SGP4DataDTO | null
   status: 'pending' | 'success' | 'error'

@@ -35,7 +35,7 @@ namespace Core.Modules.SGP4Data.Application.Services
             if (satelliteData == null)
             {
                 LogCancelNull(noradId);
-                return null; // Безопасный выход
+                return null; // Безопасный выход!
             }
 
             LogProcessSGP4ById();
@@ -96,7 +96,7 @@ namespace Core.Modules.SGP4Data.Application.Services
                 LogFailureById(ex);
                 return null;
             }
-            
+
         }
 
         public async Task<SGP4DataDTO?> GetSGPByName(string satelliteName)
@@ -114,7 +114,7 @@ namespace Core.Modules.SGP4Data.Application.Services
             if (satelliteData == null)
             {
                 LogCancelNull(satelliteName);
-                return null; // Безопасный выход
+                return null; // Безопасный выход!
             }
 
             LogProcessSGP4ByName();
@@ -175,7 +175,79 @@ namespace Core.Modules.SGP4Data.Application.Services
                 LogFailureByName(ex);
                 return null;
             }
-            
+
+        }
+
+        public async Task<List<SGP4DataDTO>?> GetSGPListByID(List<int> noradIds)
+        {
+            if (noradIds.Count <= 0) return new List<SGP4DataDTO>();
+
+            List<SGP4DataDTO> satellites = new List<SGP4DataDTO>();
+
+            foreach (int noradId in noradIds)
+            {
+                if (noradId < 0) continue;
+
+                var satelliteData = await _satelliteSGPRepository.GetOMMByID(noradId);
+                if (satelliteData == null) continue;
+
+                try
+                {
+                    // Инициализируем объекты Omm для движка SGP4 
+                    var omm = new OmmData
+                    {
+                        OmmVersion = "2.0", // Дефолтный стандарт CCSDS OMM
+                        ObjectName = satelliteData.OBJECT_NAME,
+                        ObjectID = satelliteData.OBJECT_ID,
+                        NoradCatID = (uint)satelliteData.NORAD_CAT_ID, // Приводим int базы к uint библиотеки
+                        ClassificationType = satelliteData.CLASSIFICATION_TYPE,
+                        ElementSetNo = (uint)satelliteData.ELEMENT_SET_NO,
+                        Epoch = DateTime.SpecifyKind(satelliteData.EPOCH, DateTimeKind.Utc), // Указываем UTC
+                        MeanMotion = satelliteData.MEAN_MOTION,
+                        Eccentricity = satelliteData.ECCENTRICITY,
+                        Inclination = satelliteData.INCLINATION,
+                        RAOfAscNode = satelliteData.RA_OF_ASC_NODE,
+                        ArgOfPericenter = satelliteData.ARG_OF_PERICENTER,
+                        MeanAnomaly = satelliteData.MEAN_ANOMALY,
+                        EphemerisType = satelliteData.EPHEMERIS_TYPE,
+                        BStar = satelliteData.BSTAR,
+                        MeanMotionDot = satelliteData.MEAN_MOTION_DOT,
+                        MeanMotionDDot = satelliteData.MEAN_MOTION_DDOT,
+                        RevAtEpoch = (uint)satelliteData.REV_AT_EPOCH,
+                        CenterName = "EARTH",
+                        RefFrame = "TEME",
+                        TimeSystem = "UTC",
+                        MeanElementTheory = "SGP4"
+                    };
+
+                    var satellite = new Satellite(omm);
+
+                    // Расчет позиции ECI на текущее время UTC
+                    DateTime utcTime = DateTime.UtcNow;
+                    EciCoordinate eci = satellite.Predict(utcTime);
+
+                    // Переводим декартов вектор ECI в геодезические градусы геоида Земли WGS-84
+                    GeodeticCoordinate geoPosition = eci.ToGeodetic();
+
+                    SGP4DataDTO SGP4DataDTO = new SGP4DataDTO
+                    {
+                        NoradId = satelliteData.NORAD_CAT_ID,
+                        Name = satelliteData.OBJECT_NAME,
+                        Longitude = geoPosition.Longitude.Degrees,
+                        Latitude = geoPosition.Latitude.Degrees,
+                        Altitude = geoPosition.Altitude,
+                    };
+
+                    satellites.Add(SGP4DataDTO);
+                }
+                catch (Exception ex)
+                {
+                    LogFailureById(ex);
+                    continue;
+                }
+            }
+
+            return satellites;
         }
     }
 }

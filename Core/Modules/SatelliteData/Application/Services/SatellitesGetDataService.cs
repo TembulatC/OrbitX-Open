@@ -92,7 +92,8 @@ namespace Core.Modules.SatelliteData.Application.Services
                 SatellitesFilterDTO dto = new SatellitesFilterDTO
                 {
                     NoradId = satellite.NORAD_CAT_ID,
-                    Name = satellite.OBJECT_NAME
+                    Name = satellite.OBJECT_NAME,
+                    Category = satellite.Categories[0]
                 };
 
                 satellitesListDTO.Add(dto);
@@ -126,7 +127,8 @@ namespace Core.Modules.SatelliteData.Application.Services
                 SatellitesFilterDTO dto = new SatellitesFilterDTO
                 {
                     NoradId = satellite.NORAD_CAT_ID,
-                    Name = satellite.OBJECT_NAME
+                    Name = satellite.OBJECT_NAME,
+                    Category = satellite.Categories[0]
                 };
 
                 satellitesListDTO.Add(dto);

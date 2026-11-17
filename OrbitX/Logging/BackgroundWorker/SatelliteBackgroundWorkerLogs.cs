@@ -5,44 +5,44 @@
         [LoggerMessage(
             EventId = 3001,
             Level = LogLevel.Information,
-            Message = "К спутнику {NoradId} подключился первый пользователь. Токен создан")]
-        private partial void LogAddToken(int noradId);
+            Message = "К категории {SatellitesCategory} подключился первый пользователь. Токен создан")]
+        private partial void LogAddToken(string satellitesCategory);
 
         [LoggerMessage(
             EventId = 3002,
             Level = LogLevel.Information,
-            Message = "Запущен поток для спутника {NoradId}")]
-        private partial void LogAddTask(int noradId);
+            Message = "Запущен поток для категории {SatellitesCategory}")]
+        private partial void LogAddTask(string satellitesCategory);
 
         [LoggerMessage(
             EventId = 3003,
             Level = LogLevel.Warning,
-            Message = "Сбой в такте потока спутника {NoradId}: {Message}")]
-        private partial void LogException(int noradId, string message);
+            Message = "Сбой в такте потока спутника {SatellitesCategory}: {Message}")]
+        private partial void LogException(string satellitesCategory, string message);
 
         [LoggerMessage(
             EventId = 3004,
             Level = LogLevel.Information,
-            Message = "Поток спутника {NoradId} завершает работу по требованию CancellationToken")]
-        private partial void LogOperationCanceledException(int noradId);
+            Message = "Поток спутника {SatellitesCategory} завершает работу по требованию CancellationToken")]
+        private partial void LogOperationCanceledException(string satellitesCategory);
 
         [LoggerMessage(
             EventId = 3005,
             Level = LogLevel.Information,
-            Message = "Поток спутника {NoradId} завершает работу самостоятельно между шагами по требованию CancellationToken")]
-        private partial void LogOperationCanceled(int noradId);
+            Message = "Поток спутника {SatellitesCategory} завершает работу самостоятельно между шагами по требованию CancellationToken")]
+        private partial void LogOperationCanceled(string satellitesCategory);
 
         [LoggerMessage(
             EventId = 3006,
             Level = LogLevel.Information,
-            Message = "На спутнике {NoradId} осталось 0 пользователей. Отправлено требование CancellationToken на отмену потока")]
-        private partial void LogCancelTask(int noradId);
+            Message = "На категории {SatellitesCategory} осталось 0 пользователей. Отправлено требование CancellationToken на отмену потока")]
+        private partial void LogCancelTask(string satellitesCategory);
 
         [LoggerMessage(
             EventId = 3007,
             Level = LogLevel.Information,
-            Message = "Поток спутника {NoradId} удален")]
-        private partial void LogDisposeTask(int noradId);
+            Message = "Поток спутника {SatellitesCategory} удален")]
+        private partial void LogDisposeTask(string satellitesCategory);
 
         [LoggerMessage(
             EventId = 3008,

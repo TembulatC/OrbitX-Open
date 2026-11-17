@@ -142,26 +142,26 @@ namespace OrbitX.Controllers
 
         // Имитируем вход пользователя на страницу спутника
         [HttpPost("start-test/{noradId:int}")]
-        public IActionResult StartWorkerThread(int noradId)
+        public IActionResult StartWorkerThread(int noradId, string satellitesCategory)
         {
             if (_env.IsProduction()) return NotFound("404"); // Возвращаем 404, если кто-то к нему обращается в проде
 
             // Напрямую даем команду воркеру запустить параллельный поток расчета
-            _worker.OnSatelliteWatched(noradId);
+            _worker.OnSatelliteWatched(noradId, satellitesCategory);
 
-            return Ok($"Сигнал старта отправлен для ID: {noradId}");
+            return Ok($"Сигнал старта отправлен для категории {satellitesCategory}");
         }
 
         // Имитируем выход пользователя со страницы
         [HttpPost("stop-test/{noradId:int}")]
-        public IActionResult StopWorkerThread(int noradId)
+        public IActionResult StopWorkerThread(int noradId, string satellitesCategory)
         {
             if (_env.IsProduction()) return NotFound("404"); // Возвращаем 404, если кто-то к нему обращается в проде
 
             // Даем команду воркеру затушить параллельный поток
-            _worker.OnSatelliteUnwatched(noradId);
+            _worker.OnSatelliteUnwatched(noradId, satellitesCategory);
 
-            return Ok($"Сигнал остановки отправлен для ID: {noradId}");
+            return Ok($"Сигнал остановки отправлен для категории: {satellitesCategory}");
         }
 
         #endregion

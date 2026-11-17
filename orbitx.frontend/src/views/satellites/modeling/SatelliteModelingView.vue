@@ -112,13 +112,13 @@
   import { ref, shallowRef, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
   import { useRoute } from 'vue-router'
   import { onBeforeRouteLeave } from 'vue-router'
-  import * as signalR from '@microsoft/signalr'
   import L from 'leaflet'
 
   import SatelliteStatusBar from './SatelliteStatusBar.vue'
   import SatelliteTelemetryBar from './SatelliteTelemetryBar.vue'
   import type { SGP4DataDTO, SatelliteFilterDTO, SyncStatus, ExtraSat } from '../../../types/satellite'
   import { MAIN_SAT_COLOR, pickDistinctColor } from '../../../utils/satelliteColors'
+  import { createSatelliteHub } from '../../../utils/satelliteSignalRHub'
   import '../../../assets/satellite-map.css'
 
   const route = useRoute()
@@ -152,7 +152,8 @@
   let orbitPath: L.Polyline | null = null
   let resizeObserver: ResizeObserver | null = null
 
-  let hubConnection: signalR.HubConnection | null = null
+  // Одно соединение SignalR на весь клиент: основной и дополнительные спутники — это подписки внутри него
+  const satelliteHub = createSatelliteHub(`${window.location.origin}/ws/satellite`)
   let dbTimeoutTimer: number | null = null
   let heartbeatTimer: number | null = null
   let isFirstPosition = true
@@ -175,20 +176,22 @@
 
   // Загружаем имя спутника обычным GET-запросом по ID из URL.
   // Эндпоинт возвращает список (ищет ID, в который входит число), поэтому берём точное совпадение.
-  const loadSatelliteInfo = async (id: number) => {
+  const loadSatelliteInfo = async (id: number): Promise<SatelliteFilterDTO | null> => {
     try {
       const response = await fetch(`/api/v1/GetDataById?noradId=${id}`)
-      if (!response.ok) return
+      if (!response.ok) return null
 
       const list: SatelliteFilterDTO[] = await response.json()
-      const sat = list.find((s) => s.noradId === id)
+      const sat = list.find((s) => s.noradId === id) ?? null
 
       // Если пользователь уже перешёл на другого спутника, устаревший ответ игнорируем
       if (sat && noradId.value === id) {
         satelliteName.value = sat.name
       }
+      return sat
     } catch (err) {
       console.warn('[ЦУП] Не удалось получить имя спутника:', err)
+      return null
     }
   }
 
@@ -380,23 +383,27 @@
     // Сброс долготы при смене спутника
     prevLongitude = null
 
-    if (hubConnection) {
-      try {
-        hubConnection.off('ReceivePosition')
-        await hubConnection.stop()
-        console.log('[SignalR] Соединение успешно разорвано.')
-      } catch (err) {
-        console.warn('[SignalR] Мягкий перехват при остановке группы/сокета:', err)
-      } finally {
-        hubConnection = null
-        connectionStatus.value = 'disconnected'
-        satelliteData.value = null
-        syncStatus.value = 'pending'
-      }
-    }
+    // Закрываем единственное соединение (вместе с ним закрываются все подписки)
+    await satelliteHub.disconnect()
+    console.log('[SignalR] Соединение закрыто.')
+    connectionStatus.value = 'disconnected'
+    satelliteData.value = null
+    syncStatus.value = 'pending'
 
     // Отбрасываем неприменённые обновления предыдущего спутника
     pendingMapUpdates.length = 0
+  }
+
+  // Позиция основного спутника
+  const handleMainPosition = (data: SGP4DataDTO) => {
+    clearDbTimeout()
+
+    if (syncStatus.value !== 'success') {
+      syncStatus.value = 'success'
+    }
+
+    updateSatelliteOnMap(data)
+    resetHeartbeatTimeout()
   }
 
   const startSatelliteTracking = async (id: number) => {
@@ -407,10 +414,8 @@
 
     noradId.value = id
 
-    // Сбрасываем имя предыдущего спутника и сразу грузим имя нового обычным GET-запросом.
-    // Без await — чтобы не задерживать подключение WebSocket
+    // Сбрасываем имя предыдущего спутника. Имя и категория приходят обычным GET-запросом ниже
     satelliteName.value = null
-    loadSatelliteInfo(id)
 
     connectionStatus.value = 'connecting'
     syncStatus.value = 'pending'
@@ -423,46 +428,21 @@
       }
     }, 30000)
 
-    hubConnection = new signalR.HubConnectionBuilder()
-      .withUrl(`${window.location.origin}/ws/satellite`)
-      .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Warning)
-      .build()
-
-    hubConnection.on('ReceivePosition', (data: SGP4DataDTO) => {
-      clearDbTimeout()
-
-      if (syncStatus.value !== 'success') {
-        syncStatus.value = 'success'
-      }
-
-      updateSatelliteOnMap(data)
-      resetHeartbeatTimeout()
-    })
-
-    hubConnection.onreconnecting(() => {
-      clearDbTimeout()
-      clearHeartbeatTimeout()
-      syncStatus.value = 'reconnecting'
-      connectionStatus.value = 'connecting'
-      statusText.value = 'Reconnecting...'
-      satelliteData.value = null
-    })
-
-    hubConnection.onclose(() => {
-      clearDbTimeout()
-      clearHeartbeatTimeout()
-      syncStatus.value = 'error'
-      connectionStatus.value = 'disconnected'
-      statusText.value = 'Connection lost.'
-      satelliteData.value = null
-    })
-
     try {
-      await hubConnection.start()
+      // Категорию спутника знает только сервер, поэтому сначала получаем её вместе с именем.
+      // Запасной вариант: ?category=... в адресе страницы (например, переход из каталога)
+      const info = await loadSatelliteInfo(id)
+
+      // Пока ждали ответ, пользователь мог перейти на другого спутника
+      if (noradId.value !== id) return
+
+      const queryCategory = typeof route.query.category === 'string' ? route.query.category : ''
+      const category = info?.category || queryCategory
+      if (!category) throw new Error('Satellite category is unknown')
+
+      await satelliteHub.watch(id, category, handleMainPosition)
       connectionStatus.value = 'connected'
       statusText.value = 'Tracking is enabled'
-      await hubConnection.invoke('WatchSatellite', id)
       resetHeartbeatTimeout()
     } catch (err) {
       clearDbTimeout()
@@ -475,7 +455,6 @@
 
   // ДОПОЛНИТЕЛЬНЫЕ СПУТНИКИ
   interface ExtraRuntime {
-    hub: signalR.HubConnection | null
     marker: L.Marker | null
     path: L.Polyline | null
     prevLng: number | null
@@ -485,6 +464,27 @@
 
   const extraSats = ref<ExtraSat[]>([])
   const extraRuntime = new Map<number, ExtraRuntime>()
+
+  // Состояние единственного соединения отражается и на основном, и на дополнительных спутниках
+  satelliteHub.onStateChange((state) => {
+    if (state === 'reconnecting') {
+      clearDbTimeout()
+      clearHeartbeatTimeout()
+      syncStatus.value = 'reconnecting'
+      connectionStatus.value = 'connecting'
+      statusText.value = 'Reconnecting...'
+      satelliteData.value = null
+      extraSats.value.forEach((it) => { it.status = 'pending'; it.data = null })
+    } else if (state === 'closed') {
+      clearDbTimeout()
+      clearHeartbeatTimeout()
+      syncStatus.value = 'error'
+      connectionStatus.value = 'disconnected'
+      statusText.value = 'Connection lost.'
+      satelliteData.value = null
+      extraSats.value.forEach((it) => { it.status = 'error'; it.data = null })
+    }
+  })
 
   const showAdd = ref(false)
   const addQuery = ref('')
@@ -670,13 +670,13 @@
 
     const id = r.noradId
     const color = pickDistinctColor(extraSats.value.map((s) => s.color))
-    extraSats.value.push({ noradId: id, name: r.name, color, data: null, status: 'pending' })
+    extraSats.value.push({ noradId: id, name: r.name, category: r.category, color, data: null, status: 'pending' })
     showAdd.value = false
     addQuery.value = ''
     addResults.value = []
     addMessage.value = ''
 
-    const rt: ExtraRuntime = { hub: null, marker: null, path: null, prevLng: null, heartbeat: null, disposed: false }
+    const rt: ExtraRuntime = { marker: null, path: null, prevLng: null, heartbeat: null, disposed: false }
     extraRuntime.set(id, rt)
 
     const getItem = () => extraSats.value.find((s) => s.noradId === id)
@@ -689,14 +689,7 @@
       }, 4000)
     }
 
-    const hub = new signalR.HubConnectionBuilder()
-      .withUrl(`${window.location.origin}/ws/satellite`)
-      .withAutomaticReconnect()
-      .configureLogging(signalR.LogLevel.Warning)
-      .build()
-    rt.hub = hub
-
-    hub.on('ReceivePosition', (data: SGP4DataDTO) => {
+    const handleExtraPosition = (data: SGP4DataDTO) => {
       const it = getItem()
       if (!it) return
       it.status = 'success'
@@ -712,45 +705,31 @@
         refreshLabelContent(rt.marker, cur.name, color, data)
       })
       resetBeat()
-    })
-
-    hub.onreconnecting(() => {
-      const it = getItem()
-      if (it) { it.status = 'pending'; it.data = null }
-    })
-
-    hub.onclose(() => {
-      const it = getItem()
-      if (it) { it.status = 'error'; it.data = null }
-    })
+    }
 
     try {
-      await hub.start()
-      await hub.invoke('WatchSatellite', id)
+      if (!r.category) throw new Error('Satellite category is unknown')
+
+      // Подписка идёт через общее соединение, нового вебсокета не создаётся
+      await satelliteHub.watch(id, r.category, handleExtraPosition)
       resetBeat()
     } catch (err) {
-      console.warn('[SignalR] Не удалось подключить доп. спутник:', err)
+      console.warn('[SignalR] Не удалось подписаться на доп. спутник:', err)
       const it = getItem()
       if (it) it.status = 'error'
     }
   }
 
-  const disposeExtra = async (id: number) => {
+  // unwatch = false используется при полном закрытии соединения: отписываться по одному не нужно
+  const disposeExtra = async (id: number, unwatch = true) => {
     const rt = extraRuntime.get(id)
     if (!rt) return
     rt.disposed = true
     if (rt.heartbeat) clearTimeout(rt.heartbeat)
     rt.marker?.remove()
     rt.path?.remove()
-    if (rt.hub) {
-      try {
-        rt.hub.off('ReceivePosition')
-        await rt.hub.stop()
-      } catch (err) {
-        console.warn('[SignalR] Ошибка остановки доп. спутника:', err)
-      }
-    }
     extraRuntime.delete(id)
+    if (unwatch) await satelliteHub.unwatch(id)
   }
 
   const removeExtraSat = async (id: number) => {
@@ -761,7 +740,7 @@
   const stopAllExtras = async () => {
     const ids = Array.from(extraRuntime.keys())
     extraSats.value = []
-    await Promise.all(ids.map((id) => disposeExtra(id)))
+    await Promise.all(ids.map((id) => disposeExtra(id, false)))
   }
 
   onBeforeRouteLeave(async (to, from, next) => {
