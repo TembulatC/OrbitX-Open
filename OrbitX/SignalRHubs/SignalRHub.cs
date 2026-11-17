@@ -71,12 +71,16 @@ namespace OrbitX.SignalRHubs
         {
             if (Context.Items.TryGetValue("SatellitesCategories", out var cachedCategories) && cachedCategories is Dictionary<int, string> satellitesCategories)
             {
-                // Убираем сокет из группы
-                await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"SatellitesCategory:{satellitesCategory}");
+                satellitesCategories.Remove(noradId);
+
                 // Сигнализируем воркеру, чтобы он проверил, не пора ли тушить параллельный поток
                 _worker.OnSatelliteUnwatched(noradId, satellitesCategory);
 
-                satellitesCategories.Remove(noradId);
+                if (satellitesCategories.Values.Count(category => category == satellitesCategory) <= 0)
+                {
+                    // Убираем сокет из группы
+                    await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"SatellitesCategory:{satellitesCategory}");
+                }
             }
             else LogNotFoundSatellite(noradId, satellitesCategory);
         }
